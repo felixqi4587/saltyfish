@@ -3,445 +3,390 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16140F">
+<meta name="theme-color" content="#14110B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>1406rocks · KvK 集结/支援时间助手</title>
+<title>1406rocks · KvK 时机模拟器</title>
 <style>
   :root{
-    --bg:#16140F; --surface:#211E16; --surface2:#2B2820; --border:rgba(255,255,255,.10);
-    --tx:#FBF7EE; --t2:rgba(245,238,224,.62); --t3:rgba(245,238,224,.36);
-    --ac:#E0A43B; --acb:#E8B254; --ac-tint:rgba(224,164,59,.16); --ac-on:#1A1206;
-    --ok:#30D158; --ok-bg:rgba(48,209,88,.15); --warn:#E0A43B; --warn-bg:rgba(224,164,59,.16);
-    --bad:#FF453A; --bad-bg:rgba(255,69,58,.16);
-    --r:14px; --r2:10px;
-    --font:-apple-system,BlinkMacSystemFont,system-ui,"Helvetica Neue",sans-serif;
+    --bg:#14110B; --bg2:#1C190F; --surface:#241F14; --surface2:#2E2818; --line:rgba(255,240,210,.10);
+    --tx:#FCF6E8; --t2:rgba(250,240,220,.62); --t3:rgba(250,240,220,.34);
+    --ac:#E9A82E; --ac2:#FFC558; --ac-tint:rgba(233,168,46,.16); --ac-on:#1A1206;
+    --ok:#36D17A; --ok-tint:rgba(54,209,122,.16);
+    --bad:#FF5247; --bad-tint:rgba(255,82,71,.16);
+    --enemy:#FF5247;
+    --font:-apple-system,BlinkMacSystemFont,system-ui,"PingFang SC","Helvetica Neue",sans-serif;
     --mono:ui-monospace,"SF Mono",Menlo,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{background:var(--bg);color:var(--tx);font-family:var(--font);
-    font-size:16px;line-height:1.45;letter-spacing:-.2px;
+  body{background:
+      radial-gradient(120% 60% at 50% -10%, #2A2412 0%, #14110B 55%) fixed,
+      var(--bg);
+    color:var(--tx);font-family:var(--font);font-size:16px;line-height:1.4;letter-spacing:-.2px;
     -webkit-font-smoothing:antialiased;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-  .wrap{max-width:540px;margin:0 auto;padding:0 14px 40px}
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .wrap{max-width:480px;margin:0 auto;padding:14px 14px 36px}
   .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 
-  header{position:sticky;top:0;z-index:5;background:rgba(22,20,15,.86);
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    border-bottom:.5px solid var(--border);padding:10px 14px 8px;margin:0 -14px 14px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand .sig{color:var(--ac);display:inline-flex}
-  .brand h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.4px}
-  .brand .sub{font-size:12px;color:var(--t3);margin-top:1px}
-  .clock{display:flex;gap:14px;align-items:baseline;margin-top:8px;flex-wrap:wrap}
-  .clock .big{font:700 19px/1 var(--mono);color:var(--ac)}
-  .clock .lab{font-size:11px;color:var(--t3)}
-  .phase{font-size:11px;padding:2px 8px;border-radius:100px;margin-left:auto}
-  .phase.on{background:var(--ok-bg);color:var(--ok)}
-  .phase.off{background:var(--surface2);color:var(--t2)}
+  .top{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+  .top .sig{color:var(--ac);display:inline-flex}
+  .top h1{font-size:19px;font-weight:800;margin:0;letter-spacing:.5px}
+  .top .sub{font-size:11px;color:var(--t3);margin-top:1px;letter-spacing:.3px}
 
-  .tabs{display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:12px;margin-bottom:14px}
-  .tabs button{flex:1;border:0;background:transparent;color:var(--t2);font:600 14px/1 var(--font);
-    padding:9px 4px;border-radius:9px;cursor:pointer;transition:.15s;letter-spacing:-.3px}
-  .tabs button.on{background:var(--surface2);color:var(--tx)}
-  .tabs button.on.amber{color:var(--ac)}
+  /* mode selector */
+  .modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+  .modes button{border:.5px solid var(--line);background:var(--surface);color:var(--t2);
+    border-radius:14px;padding:12px 4px;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:6px;font:600 13px/1 var(--font);transition:.16s}
+  .modes button svg{width:22px;height:22px;stroke:var(--t3);transition:.16s}
+  .modes button.on{border-color:var(--ac);background:var(--ac-tint);color:var(--ac2)}
+  .modes button.on svg{stroke:var(--ac)}
 
-  .card{background:var(--surface);border-radius:var(--r);padding:14px;margin-bottom:14px}
-  .card h2{font-size:15px;font-weight:600;margin:0 0 4px}
-  .hint{font-size:12.5px;color:var(--t3);line-height:1.5}
-  label.fld{display:block;margin-top:14px}
-  label.fld .lab{font-size:13px;color:var(--t2);margin-bottom:7px;display:block}
+  /* stage */
+  .stage{position:relative;background:linear-gradient(180deg,var(--bg2),#100E08);
+    border:.5px solid var(--line);border-radius:18px;padding:6px;overflow:hidden;margin-bottom:12px}
+  .stage svg{display:block;width:100%;height:auto}
+  .nodeLab{font:600 10px/1 var(--font);letter-spacing:.3px}
+  .playbtn{position:absolute;right:12px;bottom:12px;border:0;border-radius:100px;
+    background:var(--ac);color:var(--ac-on);font:700 13px/1 var(--font);padding:10px 16px;
+    cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .playbtn svg{width:13px;height:13px;fill:var(--ac-on)}
+  .phaselab{position:absolute;left:12px;bottom:13px;font:700 12px/1 var(--mono);color:var(--ac2);
+    letter-spacing:.5px;opacity:0;transition:opacity .2s}
+  .phaselab.show{opacity:1}
 
-  .seg{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:9px}
-  .seg button{flex:1;border:0;background:transparent;color:var(--t2);font:600 13px/1 var(--font);
-    padding:8px 4px;border-radius:7px;cursor:pointer}
-  .seg button.on{background:var(--ac);color:var(--ac-on)}
-  .chips{display:flex;gap:6px;flex-wrap:wrap}
-  .chips button{border:.5px solid var(--border);background:var(--surface2);color:var(--t2);
-    font:600 13px/1 var(--font);padding:9px 12px;border-radius:9px;cursor:pointer;min-width:46px}
-  .chips button.on{background:var(--ac-tint);border-color:var(--ac);color:var(--acb)}
-  .chips button small{font-weight:400;color:var(--t3);font-size:10px;display:block;margin-top:2px}
+  /* verdict */
+  .verdict{border-radius:16px;padding:15px 16px;margin-bottom:14px;text-align:center;transition:.2s}
+  .verdict.ok{background:var(--ok-tint)} .verdict.warn{background:var(--ac-tint)} .verdict.bad{background:var(--bad-tint)}
+  .verdict .hl{font:800 13px/1 var(--font);letter-spacing:.4px}
+  .verdict.ok .hl{color:var(--ok)} .verdict.warn .hl{color:var(--ac2)} .verdict.bad .hl{color:var(--bad)}
+  .verdict .big{font:800 38px/1 var(--mono);margin:9px 0 5px;letter-spacing:-1px}
+  .verdict .sub{font-size:13px;color:var(--t2)}
+  .verdict .sub b{color:var(--tx)}
 
-  .timerow{display:flex;align-items:center;gap:8px}
-  .timerow input{width:100%;background:var(--surface2);border:.5px solid var(--border);
-    color:var(--tx);font:600 17px/1 var(--mono);text-align:center;padding:11px 4px;border-radius:9px;
-    -moz-appearance:textfield}
-  .timerow input::-webkit-outer-spin-button,.timerow input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  .timerow .colon{color:var(--t3);font:700 17px/1 var(--mono)}
-  .timerow .unit{font-size:12px;color:var(--t3);min-width:18px}
+  /* inputs */
+  .fld{margin-bottom:13px}
+  .fld .lab{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;margin-bottom:3px}
+  .fld .lab .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .fld .tip{font-size:11.5px;color:var(--t3);margin:0 0 8px 15px;line-height:1.4}
+  .chips{display:flex;gap:7px}
+  .chips button{flex:1;border:.5px solid var(--line);background:var(--surface);color:var(--t2);
+    font:600 14px/1 var(--font);padding:11px 4px;border-radius:11px;cursor:pointer}
+  .chips button.on{background:var(--ac-tint);border-color:var(--ac);color:var(--ac2)}
+  .mmss{display:flex;align-items:center;gap:6px;background:var(--surface);border:.5px solid var(--line);
+    border-radius:11px;padding:6px 8px}
+  .mmss .step{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}
+  .mmss button{width:34px;height:34px;border:0;border-radius:9px;background:var(--surface2);color:var(--ac);
+    font:700 20px/1 var(--font);cursor:pointer;flex:0 0 auto}
+  .mmss input{width:44px;background:transparent;border:0;color:var(--tx);text-align:center;
+    font:700 20px/1 var(--mono);-moz-appearance:textfield}
+  .mmss input::-webkit-outer-spin-button,.mmss input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .mmss .u{font-size:11px;color:var(--t3)}
+  .mmss .colon{color:var(--t3);font:700 18px/1 var(--mono)}
 
-  .result{margin-top:14px;border-radius:var(--r);padding:14px;text-align:center}
-  .result.ok{background:var(--ok-bg)} .result.warn{background:var(--warn-bg)} .result.bad{background:var(--bad-bg)}
-  .result .state{font-size:13px;font-weight:600;letter-spacing:.2px}
-  .result.ok .state{color:var(--ok)} .result.warn .state{color:var(--warn)} .result.bad .state{color:var(--bad)}
-  .result .count{font:800 40px/1 var(--mono);margin:8px 0 4px;letter-spacing:-1px}
-  .result .when{font-size:13px;color:var(--t2)}
-
-  .lines{margin-top:14px;border-top:.5px solid var(--border);padding-top:12px}
-  .lines .ln{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;font-size:14px}
-  .lines .ln .k{color:var(--t2)}
-  .lines .ln .v{font:600 15px/1 var(--mono);color:var(--tx)}
-  .lines .ln .v.ac{color:var(--ac)}
-  .lines .ln .v small{color:var(--t3);font-weight:400;font-size:11px}
-
-  .copybtn{width:100%;margin-top:12px;border:0;background:var(--ac);color:var(--ac-on);
-    font:600 15px/1 var(--font);padding:13px;border-radius:11px;cursor:pointer;display:flex;
-    align-items:center;justify-content:center;gap:8px}
-  .copybtn.done{background:var(--ok);color:#08260f}
-
-  .note{background:var(--ac-tint);border-radius:var(--r2);padding:11px 12px;margin-top:12px;
-    font-size:12.5px;color:var(--tx);line-height:1.5;display:flex;gap:9px}
-  .note svg{flex:0 0 auto;color:var(--ac);margin-top:1px}
-  ul.facts{margin:6px 0 0;padding-left:18px} ul.facts li{margin:7px 0;font-size:13.5px;color:var(--t2);line-height:1.5}
-  ul.facts li b{color:var(--tx);font-weight:600}
   .foot{font-size:11px;color:var(--t3);text-align:center;margin-top:18px;line-height:1.6}
-  .foot a{color:var(--t2)}
-  .hide{display:none}
+  .hide{display:none!important}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="brand">
-      <span class="sig" aria-hidden="true">
-        <svg viewBox="0 0 120 120" width="30" height="30" fill="none">
-          <path d="M60 14 C60 14 84 22 98 22 C98 22 100 60 96 76 C91 95 74 104 60 110 C46 104 29 95 24 76 C20 60 22 22 22 22 C36 22 60 14 60 14 Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
-          <path d="M60 84 C50 84 43 78 43 69 C43 60 50 56 60 56 C70 56 77 60 77 69 C77 78 70 84 60 84 Z" fill="currentColor"/>
-          <ellipse cx="44" cy="50" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="55" cy="44" rx="5" ry="6.5" fill="currentColor"/>
-          <ellipse cx="66" cy="44" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="77" cy="50" rx="5" ry="6.5" fill="currentColor"/>
-        </svg>
-      </span>
-      <div>
-        <h1>1406rocks</h1>
-        <div class="sub">KvK 集结 / 支援 时间助手 · 1406 王国</div>
-      </div>
-    </div>
-    <div class="clock">
-      <div><div class="big tnum" id="utc">--:--:--</div><div class="lab">服务器时间 UTC</div></div>
-      <div><div class="big tnum" id="loc" style="color:var(--t2);font-size:15px">--:--:--</div><div class="lab">本地</div></div>
-      <span class="phase off" id="phase">战斗阶段</span>
-    </div>
-  </header>
-
-  <div class="card" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-    <div><div style="font-size:13px;color:var(--t2)">安全缓冲（秒）</div>
-      <div class="hint" style="margin-top:2px">点击/动画/网络延迟，自动从发兵时间里扣掉</div></div>
-    <div class="chips"><button data-safety="0">0</button><button data-safety="5">5</button>
-      <button data-safety="8" class="on">8</button><button data-safety="12">12</button><button data-safety="20">20</button></div>
+  <div class="top">
+    <span class="sig" aria-hidden="true"><svg viewBox="0 0 120 120" width="30" height="30" fill="none">
+      <path d="M60 14 C60 14 84 22 98 22 C98 22 100 60 96 76 C91 95 74 104 60 110 C46 104 29 95 24 76 C20 60 22 22 22 22 C36 22 60 14 60 14 Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M60 84 C50 84 43 78 43 69 C43 60 50 56 60 56 C70 56 77 60 77 69 C77 78 70 84 60 84 Z" fill="currentColor"/>
+      <ellipse cx="44" cy="50" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="55" cy="44" rx="5" ry="6.5" fill="currentColor"/>
+      <ellipse cx="66" cy="44" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="77" cy="50" rx="5" ry="6.5" fill="currentColor"/>
+    </svg></span>
+    <div><h1>1406 ROCKS</h1><div class="sub">KvK 集结 / 支援 时机模拟器</div></div>
   </div>
 
-  <div class="tabs">
-    <button data-tab="leader" class="on amber">车头·进攻</button>
-    <button data-tab="joiner">加入·车身</button>
-    <button data-tab="reinf">支援·防守</button>
-    <button data-tab="info">说明</button>
+  <div class="modes" id="modes">
+    <button data-mode="attack" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="M12 5l8 7-8 7"/></svg>进攻发车</button>
+    <button data-mode="join">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-2-2"/></svg>加入别人</button>
+    <button data-mode="defend">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>支援防守</button>
   </div>
 
-  <!-- ================= 车头 ================= -->
-  <section id="leader">
-    <div class="card">
-      <h2>车头：算出「开集结 / 出发 / 命中」时间</h2>
-      <p class="hint">满员 15 人（1 车头 + 14 加入）。命中 = 开集结 + 准备时间 + 你到目标的行军。把出发时间播报给车身，他们好赶上。</p>
+  <div class="stage">
+    <svg viewBox="0 0 360 196" id="svg">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- subtle field -->
+      <rect x="0" y="0" width="360" height="196" fill="none"/>
+      <g stroke="rgba(255,240,210,.05)" stroke-width="1">
+        <line x1="0" y1="49" x2="360" y2="49"/><line x1="0" y1="98" x2="360" y2="98"/><line x1="0" y1="147" x2="360" y2="147"/>
+        <line x1="90" y1="0" x2="90" y2="196"/><line x1="180" y1="0" x2="180" y2="196"/><line x1="270" y1="0" x2="270" y2="196"/>
+      </g>
+      <!-- paths (faint) + progress -->
+      <line id="path2bg" stroke="rgba(255,82,71,.25)" stroke-width="2" stroke-dasharray="3 5" class="hide"/>
+      <line id="path1bg" stroke="rgba(233,168,46,.28)" stroke-width="2" stroke-dasharray="3 5"/>
+      <line id="path2" stroke="#FF5247" stroke-width="3" stroke-linecap="round" class="hide"/>
+      <line id="path1" stroke="#E9A82E" stroke-width="3" stroke-linecap="round"/>
+      <!-- countdown ring (prep/gate/impact) -->
+      <circle id="ring" fill="none" stroke="#E9A82E" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- impact -->
+      <circle id="impact" fill="none" stroke="#FFC558" stroke-width="3" opacity="0"/>
+      <!-- tokens -->
+      <circle id="army2" r="7" fill="#FF5247" filter="url(#glow)" class="hide"/>
+      <circle id="army1" r="7" fill="#E9A82E" filter="url(#glow)"/>
+      <!-- nodes drawn last (on top) -->
+      <g id="nodes"></g>
+    </svg>
+    <div class="phaselab" id="phaselab"></div>
+    <button class="playbtn" id="play"><svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>播放</button>
+  </div>
 
-      <label class="fld"><span class="lab">集结准备时间</span>
-        <div class="chips" id="prep">
-          <button data-prep="1">1 分<small>PvP 建筑</small></button>
-          <button data-prep="5" class="on">5 分<small>巨熊最低</small></button>
-          <button data-prep="10">10 分</button><button data-prep="30">30 分</button><button data-prep="60">60 分</button>
-        </div>
-      </label>
+  <div class="verdict ok" id="verdict">
+    <div class="hl" id="v_hl">—</div>
+    <div class="big tnum" id="v_big">—</div>
+    <div class="sub" id="v_sub">—</div>
+  </div>
 
-      <label class="fld"><span class="lab">我到目标的行军时间（游戏里点目标看）</span>
-        <div class="timerow">
-          <input id="L_mm" type="number" inputmode="numeric" min="0" value="3"><span class="unit">分</span>
-          <span class="colon">:</span>
-          <input id="L_ss" type="number" inputmode="numeric" min="0" max="59" value="00"><span class="unit">秒</span>
-        </div>
-      </label>
+  <div id="inputs"></div>
 
-      <label class="fld"><span class="lab">开战方式</span>
-        <div class="seg" id="L_mode"><button data-m="now" class="on">现在开战</button><button data-m="land">指定命中时间</button></div>
-      </label>
-
-      <div id="L_landbox" class="hide">
-        <div data-anchor="L"></div>
-      </div>
-
-      <div class="result" id="L_res"><div class="state">—</div><div class="count tnum">—</div><div class="when">—</div></div>
-
-      <div class="lines" id="L_lines"></div>
-      <button class="copybtn" id="L_copy">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-        复制 Discord 播报
-      </button>
-    </div>
-  </section>
-
-  <!-- ================= 加入 ================= -->
-  <section id="joiner" class="hide">
-    <div class="card">
-      <h2>车身：什么时候必须发兵才赶得上</h2>
-      <p class="hint">你的兵要在「出发时间」前到达车头的城，否则赶不上这趟车。加入时只算你第 1 英雄的第 1 个技能——带能加成的英雄。</p>
-
-      <label class="fld"><span class="lab">车头公布的「出发时间」</span>
-        <div data-anchor="J"></div>
-      </label>
-
-      <label class="fld"><span class="lab">我到车头城的行军时间</span>
-        <div class="timerow">
-          <input id="J_mm" type="number" inputmode="numeric" min="0" value="2"><span class="unit">分</span>
-          <span class="colon">:</span>
-          <input id="J_ss" type="number" inputmode="numeric" min="0" max="59" value="30"><span class="unit">秒</span>
-        </div>
-      </label>
-
-      <div class="result" id="J_res"><div class="state">—</div><div class="count tnum">—</div><div class="when">—</div></div>
-      <div class="lines" id="J_lines"></div>
-    </div>
-  </section>
-
-  <!-- ================= 支援 ================= -->
-  <section id="reinf" class="hide">
-    <div class="card">
-      <h2>支援：什么时候发兵能在被打前到</h2>
-      <p class="hint">支援是把兵派进队友城里一起守——必须在敌人集结「命中」前到达才算数。优先级：步兵 → 骑兵 → 弓兵；建议派纯兵（可不带英雄）。</p>
-
-      <label class="fld"><span class="lab">敌方集结的「命中时间」</span>
-        <div data-anchor="R"></div>
-      </label>
-
-      <label class="fld"><span class="lab">我到被打的城的行军时间</span>
-        <div class="timerow">
-          <input id="R_mm" type="number" inputmode="numeric" min="0" value="2"><span class="unit">分</span>
-          <span class="colon">:</span>
-          <input id="R_ss" type="number" inputmode="numeric" min="0" max="59" value="00"><span class="unit">秒</span>
-        </div>
-      </label>
-
-      <div class="result" id="R_res"><div class="state">—</div><div class="count tnum">—</div><div class="when">—</div></div>
-      <div class="lines" id="R_lines"></div>
-
-      <div class="note">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-        <span>敌人常连续多波命中（错峰 30–60 秒来吃掉你的补兵）。补兵要在前一波落地后、且赶在下一波命中前到——所以两波太近时往往补不进去。</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 说明 ================= -->
-  <section id="info" class="hide">
-    <div class="card">
-      <h2>玩法与计算说明</h2>
-      <ul class="facts">
-        <li><b>战斗阶段</b>：UTC 10:00–22:00 共 12 小时；<b>城堡战 12:00 UTC</b> 开始。准备阶段约 5 天。</li>
-        <li><b>集结</b>：车头开集结后有准备窗口（PvP 可低至 1 分，巨熊等 PvE 最低 5 分）。<b>加入者的兵要在窗口结束前到达车头城</b>，窗口一关，整队一起出发。<b>命中 = 开集结 + 准备 + 车头到目标的行军</b>。</li>
-        <li><b>满员</b>：1 车头 + 14 加入 = 15 人。车头带 3 英雄共 9 技能；<b>加入者只算第 1 英雄第 1 技能</b>，全队取前 4 个加入技能——所以带对英雄、且宁可早发空位也别迟到。</li>
-        <li><b>支援/补防</b>：把兵派进队友城内一起守，<b>必须在敌方命中前到达</b>才有用。守军补充优先 步兵 → 骑兵 → 弓兵。</li>
-        <li><b>行军时间不是固定的</b>：随距离和加速 buff 变化，<b>请在游戏里点目标实测</b>填进来，本工具不替你猜。</li>
-        <li><b>安全缓冲</b>：游戏里「点击→生效」有网络/动画/服务器延迟，本工具会从你的发兵时间里扣掉这个缓冲，给你留余量。建议 5–12 秒，自己校准。</li>
-      </ul>
-      <div class="note" style="margin-top:14px">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
-        <span>本工具是 1406 王国玩家自制的时间助手，<b>非官方</b>，与 Century Games 无关。所有时间均按你填写的行军/命中时间计算，仅供协同参考——临场以指挥与游戏内为准。</span>
-      </div>
-      <p class="foot">规则参考：Kingshot 官方帮助中心、社区 KvK 攻略（kingshothandbook / kingshotmastery / kingshotpro 等）+ 实战经验。<br>1406rocks · 为本次 KvK 而生 🐻</p>
-    </div>
-  </section>
+  <p class="foot" id="foot">行军时间在游戏里点目标/队友就能看到——会随距离和加速变化，请自己量。<br>1406 玩家自制 · 非官方 · 临场以指挥为准 🐻</p>
 </div>
 
 <script>
 (function(){
   "use strict";
-  var pad=function(n){return (n<10?"0":"")+n;};
   var $=function(id){return document.getElementById(id);};
+  var NS="http://www.w3.org/2000/svg";
+  var C={ac:"#E9A82E",ac2:"#FFC558",en:"#FF5247",ok:"#36D17A",surf2:"#2E2818",t2:"rgba(250,240,220,.62)"};
 
-  /* ---------- global state ---------- */
-  var safety=8;        // seconds
-  var prep=5;          // minutes (leader)
-  var Lmode="now";     // leader mode: now | land
+  /* ---------- state ---------- */
+  var mode="attack";
+  var prep=5; // minutes
+  // per-mode seconds
+  var v={ aMarch:180, jGate:240, jMarch:150, dImpact:300, dMarch:120 };
 
-  /* ---------- time anchor widget ----------
-     produces a future timestamp from either "+mm:ss from now" or an absolute clock time (UTC/local). */
-  var anchors={};      // prefix -> {mode:'rel'|'abs', zone:'utc'|'loc', els:{}}
-  function buildAnchor(host, prefix){
-    host.innerHTML =
-      '<div class="seg" data-role="mode">'+
-        '<button data-v="rel" class="on">从现在 +</button><button data-v="abs">指定时刻</button></div>'+
-      '<div data-role="rel" style="margin-top:10px">'+
-        '<div class="timerow">'+
-          '<input data-k="rmm" type="number" inputmode="numeric" min="0" value="5"><span class="unit">分</span>'+
-          '<span class="colon">:</span>'+
-          '<input data-k="rss" type="number" inputmode="numeric" min="0" max="59" value="00"><span class="unit">秒</span>'+
-        '</div></div>'+
-      '<div data-role="abs" class="hide" style="margin-top:10px">'+
-        '<div class="timerow">'+
-          '<input data-k="ah" type="number" inputmode="numeric" min="0" max="23" value="13"><span class="colon">:</span>'+
-          '<input data-k="am" type="number" inputmode="numeric" min="0" max="59" value="05"><span class="colon">:</span>'+
-          '<input data-k="as" type="number" inputmode="numeric" min="0" max="59" value="00">'+
-          '<div class="seg" style="width:120px;margin-left:8px"><button data-z="utc" class="on">UTC</button><button data-z="loc">本地</button></div>'+
-        '</div></div>';
-    var st={mode:"rel",zone:"utc",host:host};
-    anchors[prefix]=st;
-    var modeSeg=host.querySelector('[data-role="mode"]');
-    modeSeg.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
-      st.mode=b.dataset.v;
-      modeSeg.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
-      host.querySelector('[data-role="rel"]').classList.toggle("hide",st.mode!=="rel");
-      host.querySelector('[data-role="abs"]').classList.toggle("hide",st.mode!=="abs");
-      render();});
-    var zSeg=host.querySelector('[data-role="abs"] .seg');
-    zSeg.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
-      st.zone=b.dataset.z; zSeg.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);}); render();});
-    host.addEventListener("input",render);
+  /* ---------- node positions per mode ---------- */
+  // my = origin(amber army), tgt = where army1 goes, enemy = red army origin (defend only)
+  var L={
+    attack:{ my:[58,150],  tgt:[300,60], enemy:null,
+             myLab:"我方城", tgtLab:"目标", ring:"my" },   // ring = prep fill at my
+    join:{   my:[58,150],  tgt:[300,60], enemy:null,
+             myLab:"我方城", tgtLab:"车头(集结点)", ring:"tgt" }, // ring = gate at tgt
+    defend:{ my:[316,150], tgt:[180,52], enemy:[44,150],
+             myLab:"我方城", tgtLab:"队友城", enemyLab:"敌军", ring:"tgt" } // ring = impact at tgt
+  };
+
+  function dist(a,b){return Math.hypot(b[0]-a[0],b[1]-a[1]);}
+  var R=15; // ring radius
+
+  /* ---------- build nodes ---------- */
+  function nodeEl(pos,label,kind){
+    var g=document.createElementNS(NS,"g");
+    var col = kind==="enemy"? C.en : (kind==="tgt"? C.ac2 : C.ac);
+    var rect=document.createElementNS(NS,"rect");
+    rect.setAttribute("x",pos[0]-13);rect.setAttribute("y",pos[1]-13);rect.setAttribute("width",26);rect.setAttribute("height",26);
+    rect.setAttribute("rx",7);rect.setAttribute("fill",C.surf2);rect.setAttribute("stroke",col);rect.setAttribute("stroke-width","1.5");
+    g.appendChild(rect);
+    var ic=document.createElementNS(NS,"path");
+    ic.setAttribute("transform","translate("+(pos[0]-7)+","+(pos[1]-7)+") scale(0.58)");
+    ic.setAttribute("fill","none");ic.setAttribute("stroke",col);ic.setAttribute("stroke-width","3");
+    ic.setAttribute("stroke-linecap","round");ic.setAttribute("stroke-linejoin","round");
+    var d = kind==="enemy" ? "M3 21l8-8M11 13l4-10 6 6-10 4M14 6l4 4"
+          : kind==="tgt" ? "M12 2v4M12 18v4M2 12h4M18 12h4M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"
+          : "M3 21V10l9-7 9 7v11h-6v-7h-6v7z"; // home
+    ic.setAttribute("d",d); g.appendChild(ic);
+    var t=document.createElementNS(NS,"text");
+    t.setAttribute("x",pos[0]); t.setAttribute("y",pos[1]+ (pos[1]<60? -19 : 28));
+    t.setAttribute("text-anchor","middle"); t.setAttribute("fill",C.t2); t.setAttribute("class","nodeLab");
+    t.textContent=label; g.appendChild(t);
+    return g;
   }
-  function num(host,k,def){var el=host.querySelector('[data-k="'+k+'"]');var v=el?parseInt(el.value,10):NaN;return isNaN(v)?def:v;}
-  // returns target timestamp (ms) in the future, or null
-  function anchorMs(prefix){
-    var st=anchors[prefix]; if(!st) return null; var host=st.host; var now=Date.now();
-    if(st.mode==="rel"){
-      var s=Math.max(0,num(host,"rmm",0))*60+Math.max(0,num(host,"rss",0));
-      return now+s*1000;
-    }else{
-      var h=num(host,"ah",0),m=num(host,"am",0),sec=num(host,"as",0);
-      var d=new Date(), t;
-      if(st.zone==="utc"){ t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),h,m,sec); }
-      else { var x=new Date(); x.setHours(h,m,sec,0); t=x.getTime(); }
-      if(t<=now-1000) t+=86400000; // next occurrence within 24h
-      return t;
-    }
+
+  function setLine(id,a,b){var e=$(id);e.setAttribute("x1",a[0]);e.setAttribute("y1",a[1]);e.setAttribute("x2",b[0]);e.setAttribute("y2",b[1]);}
+
+  function layout(){
+    var c=L[mode];
+    // nodes
+    var ng=$("nodes"); ng.innerHTML="";
+    ng.appendChild(nodeEl(c.my,c.myLab,"my"));
+    ng.appendChild(nodeEl(c.tgt,c.tgtLab,"tgt"));
+    if(c.enemy) ng.appendChild(nodeEl(c.enemy,c.enemyLab,"enemy"));
+    // path1 (mine)
+    setLine("path1bg",c.my,c.tgt); setLine("path1",c.my,c.my);
+    // path2 (enemy)
+    var p2=$("path2"),p2b=$("path2bg"),a2=$("army2");
+    if(c.enemy){ p2.classList.remove("hide");p2b.classList.remove("hide");a2.classList.remove("hide");
+      setLine("path2bg",c.enemy,c.tgt); setLine("path2",c.enemy,c.enemy);
+      a2.setAttribute("cx",c.enemy[0]);a2.setAttribute("cy",c.enemy[1]);
+    } else { p2.classList.add("hide");p2b.classList.add("hide");a2.classList.add("hide"); }
+    // army1 at origin
+    $("army1").setAttribute("cx",c.my[0]); $("army1").setAttribute("cy",c.my[1]);
+    // ring
+    var rp = c.ring==="my"? c.my : c.tgt;
+    var ring=$("ring"); ring.setAttribute("cx",rp[0]);ring.setAttribute("cy",rp[1]);ring.setAttribute("r",R);
+    var circ=2*Math.PI*R; ring.setAttribute("stroke-dasharray",circ);
+    ring.setAttribute("transform","rotate(-90 "+rp[0]+" "+rp[1]+")");
+    ring.setAttribute("stroke", mode==="defend"?C.en:C.ac);
+    ring.setAttribute("stroke-dashoffset", mode==="attack"? circ : 0); // attack: empty then fills; others: full then empties
+    // impact pos
+    var im=$("impact"); im.setAttribute("cx",c.tgt[0]);im.setAttribute("cy",c.tgt[1]);im.setAttribute("opacity",0);
+    ring._circ=circ;
   }
+
+  function posOn(a,b,p){return [a[0]+(b[0]-a[0])*p, a[1]+(b[1]-a[1])*p];}
+  function setArmy(id,a,b,p){var e=$(id);var pt=posOn(a,b,p);e.setAttribute("cx",pt[0]);e.setAttribute("cy",pt[1]);
+    var ln=$(id==="army1"?"path1":"path2"); ln.setAttribute("x2",pt[0]);ln.setAttribute("y2",pt[1]);}
 
   /* ---------- formatters ---------- */
-  function clk(ms,zone){var d=new Date(ms);
-    if(zone==="loc") return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
-    return pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds());}
-  function bothClk(ms){return clk(ms,"utc")+" UTC ｜ 本地 "+clk(ms,"loc");}
-  function dur(ms){ // ms>=0
-    var s=Math.round(ms/1000),m=Math.floor(s/60);s=s%60;
-    if(m>=60){var h=Math.floor(m/60);m=m%60;return h+"时"+pad(m)+"分";}
-    return (m>0? m+"分":"")+pad(s)+"秒";
+  function fmt(s){s=Math.round(s);var sign=s<0?"-":"";s=Math.abs(s);var m=Math.floor(s/60);var ss=s%60;
+    return sign+(m>0?m+"分":"")+(ss<10&&m>0?"0":"")+ss+"秒";}
+  function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+(s%60<10?"0":"")+(s%60);}
+
+  /* ---------- inputs ---------- */
+  function chips(label,tip,dotCol,val,opts,onPick){
+    var h='<div class="fld"><div class="lab"><span class="dot" style="background:'+dotCol+'"></span>'+label+'</div>'+
+      (tip?'<div class="tip">'+tip+'</div>':'')+'<div class="chips">'+
+      opts.map(function(o){return '<button data-v="'+o+'"'+(o==val?' class="on"':'')+'>'+o+' 分</button>';}).join("")+'</div></div>';
+    return h;
   }
-  function marchSec(mm,ss){return Math.max(0,(parseInt($(mm).value,10)||0))*60+Math.max(0,(parseInt($(ss).value,10)||0));}
-
-  /* ---------- result painter ---------- */
-  function paintSend(resEl, sendMs, arriveOkIfNow, lateBySec){
-    var now=Date.now(), left=sendMs-now;
-    var state,cls,count,when;
-    if(left>30000){ cls="ok"; state="还有时间，到点再发"; count=dur(left); when="最晚 "+bothClk(sendMs)+" 发兵"; }
-    else if(left>0){ cls="warn"; state="准备发兵"; count=dur(left); when="最晚 "+bothClk(sendMs)+" 发兵"; }
-    else if(arriveOkIfNow){ cls="warn"; state="立即发兵（已无安全缓冲）"; count="GO"; when="现在发还能到，但没余量了"; }
-    else { cls="bad"; state="来不及了"; count="−"+dur(-left); when="现在发也会晚约 "+lateBySec+" 秒到"; }
-    resEl.className="result "+cls;
-    resEl.querySelector(".state").textContent=state;
-    resEl.querySelector(".count").textContent=count;
-    resEl.querySelector(".when").textContent=when;
+  function stepper(label,tip,dotCol,key){
+    var s=v[key],m=Math.floor(s/60),ss=s%60;
+    return '<div class="fld"><div class="lab"><span class="dot" style="background:'+dotCol+'"></span>'+label+'</div>'+
+      (tip?'<div class="tip">'+tip+'</div>':'')+
+      '<div class="mmss" data-key="'+key+'">'+
+        '<div class="step"><button data-d="-60">−</button><input data-u="m" type="number" inputmode="numeric" min="0" value="'+m+'"><span class="u">分</span><button data-d="60">+</button></div>'+
+        '<span class="colon">:</span>'+
+        '<div class="step"><button data-d="-10">−</button><input data-u="s" type="number" inputmode="numeric" min="0" max="59" value="'+(ss<10?"0":"")+ss+'"><span class="u">秒</span><button data-d="10">+</button></div>'+
+      '</div></div>';
   }
-  function lines(el,arr){el.innerHTML=arr.map(function(x){
-    return '<div class="ln"><span class="k">'+x[0]+'</span><span class="v '+(x[2]||"")+'">'+x[1]+'</span></div>';}).join("");}
 
-  /* ================= RENDER ================= */
-  var lastBroadcast="";
-  function render(){
-    var now=Date.now();
-
-    /* ---- LEADER ---- */
-    var march=marchSec("L_mm","L_ss");
-    var res=$("L_res");
-    if(Lmode==="now"){
-      var depart=now+prep*60*1000, impact=depart+march*1000;
-      res.className="result ok";
-      res.querySelector(".state").textContent="现在开集结";
-      res.querySelector(".count").textContent="GO";
-      res.querySelector(".when").textContent="命中 "+bothClk(impact);
-      lines($("L_lines"),[
-        ["开集结","现在",""],
-        ["出发（准备结束）",clk(depart,"utc")+" UTC",""],
-        ["命中",clk(impact,"utc")+" UTC ／ 本地 "+clk(impact,"loc"),"ac"]
-      ]);
-      lastBroadcast="【1406 集结】出发 "+clk(depart,"utc")+" UTC，命中 "+clk(impact,"utc")+" UTC（准备"+prep+"分）。车身请在出发前到我城！";
+  function renderInputs(){
+    var box=$("inputs"),h="";
+    if(mode==="attack"){
+      h+=chips("集结准备时间","车头开集结后，留给大家上车的时间（游戏里选）。","var(--ac)",prep,[5,10,30,60]);
+      h+=stepper("我到目标的行军时间","就是地图上你的大军走到目标要多久。","var(--ac)","aMarch");
+    }else if(mode==="join"){
+      h+=stepper("车头还有多久出发","车头喊的「还有 X 出发」——窗口一关就发车。","var(--ac2)","jGate");
+      h+=stepper("我到车头城的行军时间","你的兵走到车头的城要多久（要在出发前到）。","var(--ac)","jMarch");
     }else{
-      var T=anchorMs("L"); // impact
-      var start=T-(prep*60+march)*1000, dep=T-march*1000, left=start-now;
-      if(left>0){ res.className="result ok"; res.querySelector(".state").textContent="距离「开集结」还有"; res.querySelector(".count").textContent=dur(left); }
-      else if(start>now-1000){ res.className="result warn"; res.querySelector(".state").textContent="现在就开集结！"; res.querySelector(".count").textContent="GO"; }
-      else { res.className="result bad"; res.querySelector(".state").textContent="来不及，缩短准备或推迟命中"; res.querySelector(".count").textContent="−"+dur(-left); }
-      res.querySelector(".when").textContent="命中 "+bothClk(T);
-      lines($("L_lines"),[
-        ["现在开集结",clk(start,"utc")+" UTC",left>0?"":"ac"],
-        ["出发（加入截止）",clk(dep,"utc")+" UTC",""],
-        ["命中",clk(T,"utc")+" UTC ／ 本地 "+clk(T,"loc"),"ac"]
-      ]);
-      lastBroadcast="【1406 集结】出发 "+clk(dep,"utc")+" UTC，命中 "+clk(T,"utc")+" UTC（准备"+prep+"分）。车身请在出发前到我城！";
+      h+=stepper("敌人还有多久命中队友","敌方集结的命中倒计时（车头喊或你估）。","var(--enemy)","dImpact");
+      h+=stepper("我到队友城的行军时间","你的援军走到被打的城要多久。","var(--ac)","dMarch");
     }
-
-    /* ---- JOINER ---- (anchor J = depart time) */
-    var jD=anchorMs("J"), jMarch=marchSec("J_mm","J_ss");
-    var jSend=jD-jMarch*1000-safety*1000;
-    var jArriveNow=now+jMarch*1000; var jOk=jArriveNow<=jD; var jLate=Math.round((jArriveNow-jD)/1000);
-    paintSend($("J_res"),jSend,jOk,jLate);
-    lines($("J_lines"),[
-      ["车头出发",clk(jD,"utc")+" UTC ／ 本地 "+clk(jD,"loc"),""],
-      ["我的行军",dur(jMarch*1000),""],
-      ["最晚发兵",clk(jSend,"utc")+" UTC ／ 本地 "+clk(jSend,"loc"),"ac"]
-    ]);
-
-    /* ---- REINFORCE ---- (anchor R = enemy impact) */
-    var rT=anchorMs("R"), rMarch=marchSec("R_mm","R_ss");
-    var rSend=rT-rMarch*1000-safety*1000;
-    var rArriveNow=now+rMarch*1000; var rOk=rArriveNow<=rT; var rLate=Math.round((rArriveNow-rT)/1000);
-    paintSend($("R_res"),rSend,rOk,rLate);
-    lines($("R_lines"),[
-      ["敌方命中",clk(rT,"utc")+" UTC ／ 本地 "+clk(rT,"loc"),""],
-      ["我的行军",dur(rMarch*1000),""],
-      ["最晚发支援",clk(rSend,"utc")+" UTC ／ 本地 "+clk(rSend,"loc"),"ac"]
-    ]);
+    box.innerHTML=h;
   }
 
-  /* ================= CLOCK + PHASE ================= */
-  function tickClock(){
-    var d=new Date();
-    $("utc").textContent=pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds());
-    $("loc").textContent=pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
-    var h=d.getUTCHours(), on=(h>=10&&h<22);
-    var p=$("phase"); p.className="phase "+(on?"on":"off");
-    p.textContent=on?"战斗阶段进行中":"战斗阶段 10:00–22:00 UTC";
+  /* ---------- compute verdict + static geometry ---------- */
+  function recompute(){
+    var ver=$("verdict"),hl=$("v_hl"),big=$("v_big"),sub=$("v_sub");
+    var c=L[mode], ring=$("ring");
+    if(mode==="attack"){
+      var total=prep*60+v.aMarch;
+      ver.className="verdict warn";
+      hl.textContent="从现在开集结";
+      big.textContent=mmss(total)+" 后命中";
+      sub.innerHTML="准备 <b>"+prep+" 分</b> ＋ 行军 <b>"+fmt(v.aMarch)+"</b>";
+      // static: army at origin, ring empty (prep not started in idle)
+      setArmy("army1",c.my,c.tgt,0);
+      ring.setAttribute("stroke-dashoffset",ring._circ);
+    }else if(mode==="join"){
+      var slack=v.jGate-v.jMarch;
+      setArmy("army1",c.my,c.tgt, clamp(v.jMarch/Math.max(v.jGate,v.jMarch,1),0,1)*0); // idle at origin
+      $("army1").setAttribute("cx",c.my[0]);$("army1").setAttribute("cy",c.my[1]);
+      ring.setAttribute("stroke-dashoffset",0); // gate full (open) idle
+      if(slack>=20){ ver.className="verdict ok"; hl.textContent="赶得上 ✓"; big.textContent="还可等 "+mmss(slack);
+        sub.innerHTML="最晚<b>出发前 "+fmt(v.jMarch)+"</b>发兵就能上车"; }
+      else if(slack>=0){ ver.className="verdict warn"; hl.textContent="快关窗了"; big.textContent="立刻发兵";
+        sub.innerHTML="只剩 <b>"+fmt(slack)+"</b> 余量，马上发"; }
+      else { ver.className="verdict bad"; hl.textContent="来不及 ✕"; big.textContent="差 "+fmt(-slack);
+        sub.innerHTML="现在立刻发也赶不上这趟车"; }
+    }else{
+      var slackD=v.dImpact-v.dMarch;
+      $("army1").setAttribute("cx",c.my[0]);$("army1").setAttribute("cy",c.my[1]);
+      $("army2").setAttribute("cx",c.enemy[0]);$("army2").setAttribute("cy",c.enemy[1]);
+      ring.setAttribute("stroke-dashoffset",0);
+      if(slackD>=20){ ver.className="verdict ok"; hl.textContent="守得住 ✓"; big.textContent="早到 "+mmss(slackD);
+        sub.innerHTML="最晚<b>敌人命中前 "+fmt(v.dMarch)+"</b>发援军"; }
+      else if(slackD>=0){ ver.className="verdict warn"; hl.textContent="勉强赶上"; big.textContent="立刻支援";
+        sub.innerHTML="只剩 <b>"+fmt(slackD)+"</b> 余量，马上发"; }
+      else { ver.className="verdict bad"; hl.textContent="守不住 ✕"; big.textContent="晚 "+fmt(-slackD);
+        sub.innerHTML="援军会比敌人晚到，赶不及"; }
+    }
   }
+  function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
 
-  /* ================= WIRE UP ================= */
-  // safety chips
-  document.querySelector("[data-safety='8']").parentNode.addEventListener("click",function(e){
-    var b=e.target.closest("[data-safety]"); if(!b) return; safety=parseInt(b.dataset.safety,10);
-    this.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);}); render();});
-  // prep chips
-  $("prep").addEventListener("click",function(e){var b=e.target.closest("[data-prep]");if(!b)return;
-    prep=parseInt(b.dataset.prep,10); this.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);}); render();});
-  // leader mode
-  $("L_mode").addEventListener("click",function(e){var b=e.target.closest("[data-m]");if(!b)return;
-    Lmode=b.dataset.m; this.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
-    $("L_landbox").classList.toggle("hide",Lmode!=="land"); render();});
-  // march inputs
-  ["L_mm","L_ss","J_mm","J_ss","R_mm","R_ss"].forEach(function(id){$(id).addEventListener("input",render);});
-  // anchors
-  document.querySelectorAll("[data-anchor]").forEach(function(h){buildAnchor(h,h.getAttribute("data-anchor"));});
-  // tabs
-  var sections=["leader","joiner","reinf","info"];
-  document.querySelector(".tabs").addEventListener("click",function(e){var b=e.target.closest("[data-tab]");if(!b)return;
-    var t=b.dataset.tab;
-    this.querySelectorAll("button").forEach(function(x){x.classList.remove("on","amber");});
-    b.classList.add("on"); if(t!=="info") b.classList.add("amber");
-    sections.forEach(function(s){$(s).classList.toggle("hide",s!==t);});});
-  // copy broadcast
-  $("L_copy").addEventListener("click",function(){var btn=this;
-    var done=function(){btn.classList.add("done");btn.lastChild.textContent="已复制 ✓";
-      setTimeout(function(){btn.classList.remove("done");btn.lastChild.textContent="复制 Discord 播报";},1600);};
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(lastBroadcast).then(done,done);}
-    else{var ta=document.createElement("textarea");ta.value=lastBroadcast;document.body.appendChild(ta);ta.select();
-      try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); done();}
+  /* ---------- play full animation ---------- */
+  var raf=null;
+  function play(){
+    if(raf) cancelAnimationFrame(raf);
+    var c=L[mode], ring=$("ring"), circ=ring._circ, im=$("impact");
+    var phase=$("phaselab"); phase.classList.add("show");
+    im.setAttribute("opacity",0);
+    var t0=performance.now();
+
+    if(mode==="attack"){
+      var prepS=prep*60, marchS=v.aMarch, totS=prepS+marchS;
+      var scale=5200/Math.max(totS,1); var prepP=prepS*scale, marchP=marchS*scale;
+      var run=function(now){var e=now-t0;
+        if(e<prepP){ var p=e/prepP; ring.setAttribute("stroke-dashoffset",circ*(1-p)); // fill
+          setArmy("army1",c.my,c.tgt,0); phase.textContent="集结准备中 "+fmt(prepS*(1-p))+" →出发"; }
+        else if(e<prepP+marchP){ ring.setAttribute("stroke-dashoffset",0); var p=(e-prepP)/marchP;
+          setArmy("army1",c.my,c.tgt,p); phase.textContent="行军中 "+fmt(marchS*(1-p))+" →命中"; }
+        else { setArmy("army1",c.my,c.tgt,1); flash(im); phase.textContent="命中！"; done(); return; }
+        raf=requestAnimationFrame(run);};
+      raf=requestAnimationFrame(run);
+
+    }else if(mode==="join"){
+      var gate=v.jGate, march=v.jMarch, span=Math.max(gate,march,1);
+      var scale=5000/span, gateP=gate*scale, marchP2=march*scale;
+      var run=function(now){var e=now-t0; var end=Math.max(gateP,marchP2);
+        var gp=clamp(e/gateP,0,1); ring.setAttribute("stroke-dashoffset",circ*gp); // gate closing (offset->circ = empty)
+        var mp=clamp(e/marchP2,0,1); setArmy("army1",c.my,c.tgt,mp);
+        phase.textContent="出发还剩 "+fmt(gate*(1-gp))+" ｜我还要 "+fmt(march*(1-mp));
+        if(e>=end){ var win=march<=gate; if(win){flash(im);} phase.textContent= win?"上车成功！":"窗口已关，没赶上"; done(); return; }
+        raf=requestAnimationFrame(run);};
+      raf=requestAnimationFrame(run);
+
+    }else{
+      var imp=v.dImpact, marchD=v.dMarch, span2=Math.max(imp,marchD,1);
+      var scale=5000/span2, impP=imp*scale, myP=marchD*scale;
+      var run=function(now){var e=now-t0; var end=Math.max(impP,myP);
+        var ip=clamp(e/impP,0,1); ring.setAttribute("stroke-dashoffset",circ*ip);
+        setArmy("army2",c.enemy,c.tgt,ip);
+        var mp=clamp(e/myP,0,1); setArmy("army1",c.my,c.tgt,mp);
+        phase.textContent="敌人命中还剩 "+fmt(imp*(1-ip))+" ｜援军还要 "+fmt(marchD*(1-mp));
+        if(e>=end){ var hold=marchD<=imp; flash(im, hold?C.ok:C.en);
+          phase.textContent= hold?"援军先到，守住！":"敌人先到，城破"; done(); return; }
+        raf=requestAnimationFrame(run);};
+      raf=requestAnimationFrame(run);
+    }
+    function done(){ setTimeout(function(){phase.classList.remove("show"); recompute();},1800); }
+  }
+  function flash(im,col){im.setAttribute("stroke",col||C.ac2);
+    var r=4,o=1;im.setAttribute("opacity",1);
+    (function grow(){r+=2.2;o-=0.04;im.setAttribute("r",r);im.setAttribute("opacity",Math.max(0,o));
+      if(o>0)requestAnimationFrame(grow);})();}
+
+  /* ---------- wire ---------- */
+  $("modes").addEventListener("click",function(e){var b=e.target.closest("[data-mode]");if(!b)return;
+    mode=b.dataset.mode; this.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===b);});
+    layout(); renderInputs(); recompute();});
+  $("inputs").addEventListener("click",function(e){
+    var chip=e.target.closest(".chips [data-v]");
+    if(chip){ prep=parseInt(chip.dataset.v,10); chip.parentNode.querySelectorAll("button").forEach(function(x){x.classList.toggle("on",x===chip);}); recompute(); return;}
+    var sb=e.target.closest(".mmss [data-d]");
+    if(sb){ var box=sb.closest(".mmss"),key=box.dataset.key,d=parseInt(sb.dataset.d,10);
+      v[key]=Math.max(0,v[key]+d); syncStepper(box,key); recompute(); }
   });
+  $("inputs").addEventListener("input",function(e){var inp=e.target.closest(".mmss input");if(!inp)return;
+    var box=inp.closest(".mmss"),key=box.dataset.key;
+    var m=parseInt(box.querySelector('[data-u="m"]').value,10)||0, s=parseInt(box.querySelector('[data-u="s"]').value,10)||0;
+    v[key]=Math.max(0,m*60+s); recompute();});
+  function syncStepper(box,key){var s=v[key];box.querySelector('[data-u="m"]').value=Math.floor(s/60);
+    var ss=s%60;box.querySelector('[data-u="s"]').value=(ss<10?"0":"")+ss;}
+  $("play").addEventListener("click",play);
 
-  tickClock(); render();
-  setInterval(function(){tickClock();render();},250);
+  /* ---------- go ---------- */
+  layout(); renderInputs(); recompute();
 })();
 </script>
 </body>
