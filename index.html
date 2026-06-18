@@ -71,15 +71,13 @@
     border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:0 0 14px;text-align:center;letter-spacing:.2px}
   .castlephase b{color:var(--ac2);font-weight:700}
 
-  /* ---- gift-code lock gate: hide write/PII controls until 666 is entered ---- */
-  #auto:not(.unlocked) .needadmin{display:none}
-  .lockgate{display:none}
-  #auto:not(.unlocked) .lockgate{display:block}
+  /* ---- gift-code page: back link ---- */
   .backhome{display:inline-flex;align-items:center;gap:5px;background:none;border:none;color:var(--t2);
     font:600 13px/1 var(--font);cursor:pointer;padding:4px 0;margin-bottom:4px}
+  #brand{-webkit-user-select:none;user-select:none}
 
   /* ---- view tabs ---- */
-  .viewtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+  .viewtabs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
   .viewtabs button{border:1px solid var(--line);background:linear-gradient(180deg,var(--surface-hi),var(--surface));
     color:var(--t2);border-radius:12px;padding:11px 2px;cursor:pointer;font:700 12.5px/1.1 var(--font);transition:.18s}
   .viewtabs button.on{border-color:var(--ac);background:linear-gradient(180deg,rgba(236,174,54,.22),rgba(236,174,54,.08));
@@ -265,7 +263,7 @@
       <path d="M60 84 C50 84 43 78 43 69 C43 60 50 56 60 56 C70 56 77 60 77 69 C77 78 70 84 60 84 Z" fill="currentColor"/>
       <ellipse cx="44" cy="50" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="55" cy="44" rx="5" ry="6.5" fill="currentColor"/>
       <ellipse cx="66" cy="44" rx="5" ry="6.5" fill="currentColor"/><ellipse cx="77" cy="50" rx="5" ry="6.5" fill="currentColor"/></svg></span>
-    <div><h1>1406 ROCKS</h1><div class="sub">王城战 · 全王国跨联盟协同</div></div>
+    <div><h1 id="brand">1406 ROCKS</h1><div class="sub">王城战 · 全王国跨联盟协同</div></div>
     <div class="clock"><span id="utc">--:--:--</span><small>UTC · 本地 <span id="loc">--:--:--</span></small></div>
   </div>
 
@@ -280,7 +278,6 @@
   <div class="viewtabs hide" id="viewtabs">
     <button data-v="admin" class="on">🔧 配置</button>
     <button data-v="home">👁 预览</button>
-    <button data-v="auto">🎁 自动兑换</button>
   </div>
 
   <!-- ===================== 玩家主页 ===================== -->
@@ -291,11 +288,6 @@
       <div class="mmss"><input id="me_mm" type="number" min="0" value="1"><span class="u">分</span><span class="c">:</span><input id="me_ss" type="number" min="0" max="59" value="20"><span class="u">秒</span><span style="margin-left:auto;font-size:11px;color:var(--t3)">通常 1 分多</span></div>
     </div>
 
-    <div class="card" style="border-color:var(--gold-line);background:linear-gradient(180deg,var(--acb),var(--surface))">
-      <h2 style="margin-top:0">🎁 礼包码 · 全自动兑换</h2>
-      <p class="hint" style="margin:6px 0 12px">录入队员 Player ID,云端<b>自动收码 + 给全队兑换</b>,无人值守。官方 Discord 直连每 1 分钟检查、发现新码立刻全队兑。<b>添加 Player ID 需管理密码 666。</b></p>
-      <button class="btn amber full" id="goAuto">进入礼包码兑换 →</button>
-    </div>
 
     <div class="stage">
       <span class="cnr tl"></span><span class="cnr tr"></span><span class="cnr bl"></span><span class="cnr br"></span>
@@ -337,16 +329,13 @@
       <div class="herohead"><span class="step">🎁</span>云端全自动兑换</div>
       <div class="herosub">录入队员 Player ID 即可。云端（Cloudflare）<b>自动收码 + 给全队兑换</b>，队员零操作。<b>官方 Discord 直连每 1 分钟读一次</b>、第三方源每 5 分钟兜底，发现新码立刻全队兑换（连点都不用）。官方客服已确认此类自动兑换不打击。</div>
     </div>
-    <div class="card lockgate" style="border-color:var(--gold-line)">
-      <h2 style="margin-top:0">🔒 需要管理密码</h2>
-      <p class="hint" style="margin:6px 0 12px">添加 / 编辑 <b>Player ID</b>、连接官方 Discord、立即兑换等操作仅限管理。输入密码 <b>666</b> 解锁。</p>
-      <button class="btn amber full" id="autoUnlock">🔓 输入 666 解锁</button>
-    </div>
     <div class="card">
       <h2>🎟 当前可用礼包码（自动收集）</h2>
       <div id="autoCodes" class="hint">加载中…</div>
+      <div class="lab" style="margin-top:14px">📜 历史码（已过期 / 已用尽）</div>
+      <div id="codeHistory" class="hint" style="margin-top:6px">—</div>
     </div>
-    <div class="card needadmin">
+    <div class="card">
       <h2>🤖 官方 Discord 直连（秒级·全自动）</h2>
       <p class="hint">把 <b>1406rocks-codebot</b> 的 Bot Token 粘进来，云端就每分钟直读你关注的官方发码频道、发现新码立刻全队兑换。<b>这是不依赖任何第三方、信得过的官方直连。</b>Token 只存在你自己的云端、仅管理可见。</p>
       <div id="discordStatus" class="hint" style="margin:8px 0">检查连接中…</div>
@@ -357,14 +346,14 @@
       </div>
       <div id="dTokenMsg" class="hint" style="margin-top:8px"></div>
     </div>
-    <div class="card needadmin">
+    <div class="card">
       <h2>👥 队员名单</h2>
       <p class="hint">名字（备注）+ Player ID（游戏内点左上角头像可看到）。存在云端、仅管理可见。<b>改动自动保存，无需手动。</b></p>
       <div id="rosterList"></div>
       <button class="add" id="addMember">＋ 加队员</button>
       <div id="rosterSave" class="hint" style="margin-top:9px">改动会自动保存到云端</div>
     </div>
-    <div class="card needadmin">
+    <div class="card">
       <h2>📥 直接喂官方码（秒级抢）</h2>
       <p class="hint" style="margin:0 0 9px">在官方 Discord 看到新码？把<b>码</b>（或整段消息）粘进来，云端<b>立刻</b>给全队抢兑——不等 5 分钟巡检。这是你信得过的官方直连通道。</p>
       <div style="display:flex;gap:8px">
@@ -374,7 +363,7 @@
       </div>
       <div id="ingestMsg" class="hint" style="margin-top:8px"></div>
     </div>
-    <div class="card needadmin">
+    <div class="card">
       <p class="hint" style="margin:0 0 9px">加完 Player ID 点这里立即领取（否则约每 5 分钟云端自动检查、有新码自动兑换）。</p>
       <button class="btn amber full" id="runRedeem">▶ 立即云端兑换全队</button>
       <div id="redeemLog" style="margin-top:10px"></div>
@@ -434,6 +423,7 @@ var C={ac:"#E9A82E",ac2:"#FFC558",ok:"#36D17A",bad:"#FF5247",blue:"#5BA8FF",t3:"
 
 var st={ side:"right", tactics:"", castleWhales:[], turretLeaders:["","","",""], enemyWhales:[], giftCodes:[] };
 var admin=false, adminName="", baseUpdatedAt=null, uid=1, view="home", roster=[];
+var codeUnlocked=false, brandTaps=0, brandTapT=0; // secret entry to the hidden gift-code page
 var LS_KEY="rocks1406_admin", LS_FID="rocks1406_fid", LS_REDEEMED="rocks1406_redeemed", LS_ROSTER="rocks1406_roster";
 var GIFT_URL="https://ks-giftcode.centurygame.com/";
 
@@ -510,18 +500,21 @@ function doLogin(){ var pw=prompt("管理密码："); if(pw==null) return; if(pw
   try{ localStorage.setItem(LS_KEY,JSON.stringify({ok:true,name:nm})); }catch(e){}
   view="admin"; applyAdminUI(); toast("已进入管理 · "+(nm||"匿名")); }
 function doLogout(){ admin=false; adminName=""; try{localStorage.removeItem(LS_KEY);}catch(e){} view="home"; applyAdminUI(); toast("已退出管理"); }
-function unlockAuto(){ var pw=prompt("输入管理密码 666 解锁（添加 Player ID / 连接 Discord / 立即兑换）："); if(pw==null) return; if(pw!=="666"){ toast("密码错误"); return; }
-  if(!adminName){ var nm=(prompt("你的名字（用于署名，可留空）：")||"").trim().slice(0,24); adminName=nm; }
-  admin=true; try{ localStorage.setItem(LS_KEY,JSON.stringify({ok:true,name:adminName})); }catch(e){}
-  view="auto"; applyAdminUI(); toast("已解锁 ✓"); }
-function showView(v){ if(v==="admin"&&!admin) v="home"; view=v; // #auto is reachable from home without login; its write/PII controls stay gated by 666
+// secret entry to the hidden gift-code page: tap the 1406 ROCKS logo 5× → enter 666 (no visible hint)
+function brandTap(){ var t=Date.now(); if(t-brandTapT>2500) brandTaps=0; brandTapT=t; brandTaps++;
+  if(brandTaps>=5){ brandTaps=0; enterCodes(); } }
+function enterCodes(){ if(codeUnlocked||admin){ showView("auto"); return; }
+  var pw=prompt("密码："); if(pw==null) return; if(pw!=="666"){ toast("密码错误"); return; }
+  codeUnlocked=true; showView("auto"); }
+function showView(v){ if(v==="admin"&&!admin) v="home";
+  if(v==="auto"&&!codeUnlocked&&!admin) v="home"; // gift-code page is gated by the secret 666 entry
+  view=v;
   $("home").classList.toggle("hide",v!=="home");
   $("admin").classList.toggle("hide",v!=="admin");
   $("auto").classList.toggle("hide",v!=="auto");
-  $("auto").classList.toggle("unlocked",admin);
   $("viewtabs").querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-v")===v);});
   window.scrollTo(0,0);
-  if(v==="auto"){ loadAutoCodes(); loadDiscordStatus(); if(admin){ if(!rosterLoaded) loadRoster(); loadLast(); } }
+  if(v==="auto"){ loadAutoCodes(); loadDiscordStatus(); if(!rosterLoaded) loadRoster(); loadLast(); }
 }
 function applyAdminUI(){
   $("pubBtn").classList.toggle("hide",!admin);
@@ -597,7 +590,10 @@ function saveRosterNow(silent){ try{localStorage.setItem(LS_ROSTER,JSON.stringif
    .catch(function(){ setSaveStatus("已存本机，云端失败（稍后重试）"); }); }
 function loadAutoCodes(){ var box=$("autoCodes"); if(!box) return; box.textContent="加载中…";
   fetch(WBASE+"/codes",{cache:"no-store"}).then(function(r){return r.json();}).then(function(j){ var cs=(j&&j.codes)||[];
-    box.innerHTML= cs.length? '<div class="chips">'+cs.map(function(c){return '<span class="chip" style="background:var(--acb);border-color:var(--gold-line);color:var(--ac2)">'+esc(c)+'</span>';}).join("")+'</div>' : '<span class="hint">暂无可用码</span>'; })
+    box.innerHTML= cs.length? '<div class="chips">'+cs.map(function(c){return '<span class="chip" style="background:var(--acb);border-color:var(--gold-line);color:var(--ac2)">'+esc(c)+'</span>';}).join("")+'</div>' : '<span class="hint">暂无可用码</span>';
+    var hb=$("codeHistory"); if(hb){ var h=(j&&j.history)||[];
+      hb.innerHTML= h.length? '<div class="chips">'+h.map(function(x){var lab=x.status==="usedup"?"已用尽":"已过期";
+        return '<span class="chip" style="opacity:.6;text-decoration:line-through" title="'+lab+'">'+esc(x.code)+'</span>';}).join("")+'</div>' : '<span class="hint">—</span>'; } })
    .catch(function(){ box.textContent="加载失败"; }); }
 function statusInfo(s){ var m={ok:["✓ 刚兑换","var(--ok)"],already:["✓ 已兑换","var(--ok)"],expired:["码过期","var(--ac2)"],invalid:["码无效","var(--bad)"],usedup:["已用尽","var(--ac2)"],limited:["⚠ 限量抢光","var(--ac2)"],bad_fid:["FID错误","var(--bad)"],rate:["限流稍后","var(--ac2)"],capped:["超上限,下次","var(--t3)"],err:["失败","var(--bad)"]}; return m[s]||[s,"var(--t2)"]; }
 function renderLog(rec){ var log=$("redeemLog"); if(!log) return;
@@ -814,9 +810,8 @@ $("ingestBtn").addEventListener("click",ingestCode);
 $("ingestCode").addEventListener("keydown",function(e){ if(e.key==="Enter") ingestCode(); });
 $("dTokenBtn").addEventListener("click",saveDiscordToken);
 $("dToken").addEventListener("keydown",function(e){ if(e.key==="Enter") saveDiscordToken(); });
-$("goAuto").addEventListener("click",function(){ showView("auto"); });
+$("brand").addEventListener("click",brandTap);
 $("autoBack").addEventListener("click",function(){ showView("home"); });
-$("autoUnlock").addEventListener("click",unlockAuto);
 ["me_mm","me_ss"].forEach(function(id){$(id).addEventListener("input",function(){renderRefillPanel();});});
 $("scrub").addEventListener("input",function(){playing=false;$("pp").textContent="▶";tNow=+$("scrub").value;renderAnim(tNow);});
 $("pp").addEventListener("click",function(){playing=!playing;$("pp").textContent=playing?"⏸":"▶";lastTs=null;});
