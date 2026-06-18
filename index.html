@@ -326,48 +326,49 @@
   <section id="auto" class="hide">
     <button class="backhome" id="autoBack">← 返回主页</button>
     <div class="card hero">
-      <div class="herohead"><span class="step">🎁</span>云端全自动兑换</div>
-      <div class="herosub">录入队员 Player ID 即可。云端（Cloudflare）<b>自动收码 + 给全队兑换</b>，队员零操作。<b>官方 Discord 直连每 1 分钟读一次</b>、第三方源每 5 分钟兜底，发现新码立刻全队兑换（连点都不用）。官方客服已确认此类自动兑换不打击。</div>
-    </div>
-    <div class="card">
-      <h2>🎟 当前可用礼包码（自动收集）</h2>
-      <div id="autoCodes" class="hint">加载中…</div>
-      <div class="lab" style="margin-top:14px">📜 历史码（已过期 / 已用尽）</div>
-      <div id="codeHistory" class="hint" style="margin-top:6px">—</div>
-    </div>
-    <div class="card">
-      <h2>🤖 官方 Discord 直连（秒级·全自动）</h2>
-      <p class="hint">把 <b>1406rocks-codebot</b> 的 Bot Token 粘进来，云端就每分钟直读你关注的官方发码频道、发现新码立刻全队兑换。<b>这是不依赖任何第三方、信得过的官方直连。</b>Token 只存在你自己的云端、仅管理可见。</p>
-      <div id="discordStatus" class="hint" style="margin:8px 0">检查连接中…</div>
-      <div style="display:flex;gap:8px">
-        <input id="dToken" type="password" placeholder="粘贴 Bot Token（机器人页「重置令牌」后复制）" autocomplete="off" spellcheck="false"
-          style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--gold-line);border-radius:10px;background:var(--surface);color:var(--t1);font-size:13px">
-        <button class="btn amber" id="dTokenBtn" style="white-space:nowrap;width:auto;padding:0 16px">连接</button>
-      </div>
-      <div id="dTokenMsg" class="hint" style="margin-top:8px"></div>
+      <div class="herohead"><span class="step">🎁</span>全自动兑换</div>
+      <div class="herosub">队员零操作。官方 Discord 直连每分钟读 + 三方源每 5 分钟兜底，发现新码<b>全队自动秒兑</b>。</div>
+      <div id="discordStatus" class="hint" style="margin-top:10px">检查连接中…</div>
+      <details style="background:none;border:none;box-shadow:none;padding:0;margin:8px 0 0">
+        <summary style="font-size:13px;padding:8px 0">⚙️ 设置 / 更换 官方 Discord Bot Token</summary>
+        <p class="hint" style="margin:2px 0 9px">粘 <b>1406rocks-codebot</b> 的 Bot Token，云端即每分钟直读你关注的官方发码频道。Token 只存你自己的云端。</p>
+        <div style="display:flex;gap:8px">
+          <input id="dToken" type="password" placeholder="粘贴 Bot Token" autocomplete="off" spellcheck="false"
+            style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--gold-line);border-radius:10px;background:var(--surface);color:var(--t1);font-size:13px">
+          <button class="btn amber" id="dTokenBtn" style="white-space:nowrap;width:auto;padding:0 16px">连接</button>
+        </div>
+        <div id="dTokenMsg" class="hint" style="margin-top:8px"></div>
+      </details>
     </div>
     <div class="card">
       <h2>👥 队员名单</h2>
-      <p class="hint">名字（备注）+ Player ID（游戏内点左上角头像可看到）。存在云端、仅管理可见。<b>改动自动保存，无需手动。</b></p>
+      <p class="hint">名字（备注）+ Player ID（游戏内点左上角头像可看到）。<b>改动自动保存。</b></p>
       <div id="rosterList"></div>
       <button class="add" id="addMember">＋ 加队员</button>
       <div id="rosterSave" class="hint" style="margin-top:9px">改动会自动保存到云端</div>
     </div>
     <div class="card">
-      <h2>📥 直接喂官方码（秒级抢）</h2>
-      <p class="hint" style="margin:0 0 9px">在官方 Discord 看到新码？把<b>码</b>（或整段消息）粘进来，云端<b>立刻</b>给全队抢兑——不等 5 分钟巡检。这是你信得过的官方直连通道。</p>
+      <h2>🎟 当前可用礼包码</h2>
+      <div id="autoCodes" class="hint">加载中…</div>
+      <details style="background:none;border:none;box-shadow:none;padding:0;margin:12px 0 0">
+        <summary style="font-size:13px;padding:6px 0">📜 历史码（已过期 / 已用尽）</summary>
+        <div id="codeHistory" class="hint" style="margin-top:6px">—</div>
+      </details>
+    </div>
+    <div class="card">
+      <button class="btn amber full" id="runRedeem">▶ 立即云端兑换全队</button>
+      <div id="redeemLog" style="margin-top:10px"></div>
+    </div>
+    <details>
+      <summary>📥 手动喂码（备用·看到码立刻抢）</summary>
+      <p class="hint" style="margin:2px 0 9px">在官方 Discord 看到新码？把码或整段消息粘进来，云端立刻全队抢兑，不等巡检。</p>
       <div style="display:flex;gap:8px">
         <input id="ingestCode" type="text" placeholder="粘贴官方码 或 整段消息" autocomplete="off" spellcheck="false"
           style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--gold-line);border-radius:10px;background:var(--surface);color:var(--t1);font-size:14px">
         <button class="btn amber" id="ingestBtn" style="white-space:nowrap;width:auto;padding:0 16px">⚡ 立即抢</button>
       </div>
-      <div id="ingestMsg" class="hint" style="margin-top:8px"></div>
-    </div>
-    <div class="card">
-      <p class="hint" style="margin:0 0 9px">加完 Player ID 点这里立即领取（否则约每 5 分钟云端自动检查、有新码自动兑换）。</p>
-      <button class="btn amber full" id="runRedeem">▶ 立即云端兑换全队</button>
-      <div id="redeemLog" style="margin-top:10px"></div>
-    </div>
+      <div id="ingestMsg" class="hint" style="margin-top:8px;margin-bottom:8px"></div>
+    </details>
   </section>
 
   <!-- ===================== 管理配置页 ===================== -->
