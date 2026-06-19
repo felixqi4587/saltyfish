@@ -8,15 +8,28 @@
 <title>咸鱼小队 · 防守支援</title>
 <link rel="stylesheet" href="app.css">
 <style>
-  .lane .mk{width:78px}
-  .lane.now .mk.send .dot{box-shadow:0 0 0 6px rgba(111,186,44,.25)}
+  /* clear separation between 敌A / 敌B */
+  .enemyblock{border:2px solid var(--line);border-radius:20px;padding:8px;margin-bottom:16px;
+    background:linear-gradient(180deg,#fffdf6,#fbf7ec);box-shadow:var(--shadow-sm)}
+  .enemyblock .lane{border:0;background:none;box-shadow:none;margin-bottom:8px;min-height:114px;padding:30px 16px 26px}
+  .enemyblock .erow{margin-bottom:0}
+  .lane .mk{width:88px}
+  .lane .mk .l.hi{font-weight:900;font-size:11px;margin-top:3px}
+  .lane .mk.send .dot{box-shadow:0 0 0 4px rgba(111,186,44,.18)}
+  .lane.now .mk.send .dot{box-shadow:0 0 0 7px rgba(111,186,44,.32)}
   .lane .mk.land .dot.two{background:linear-gradient(90deg,var(--coral) 0 50%,var(--mint) 50% 100%)}
-  .lane .mk.land .t{color:var(--coral)}
-  .lane .gaplab{position:absolute;top:38px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--brown2);white-space:nowrap}
+  /* 敌集结 5:00 band + 发车 tick */
+  .lane .gband{position:absolute;top:55px;height:12px;left:0;border-radius:6px;border:1.5px solid rgba(245,195,28,.55);
+    background:repeating-linear-gradient(45deg,rgba(245,195,28,.34) 0 6px,rgba(245,195,28,.12) 6px 12px)}
+  .lane .gbl{position:absolute;top:38px;transform:translateX(-50%);font-size:10px;font-weight:800;color:#b88a08;white-space:nowrap}
+  .lane .depart{position:absolute;top:50px;transform:translateX(-50%);z-index:2}
+  .lane .depart i{display:block;width:2px;height:22px;background:var(--brown2);opacity:.6;margin:0 auto}
+  .lane .depart span{display:block;font-size:9px;font-weight:800;color:var(--brown2);white-space:nowrap;text-align:center}
+  .lane .gaplab{position:absolute;top:40px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--green-deep);white-space:nowrap}
   .lane .fire{position:absolute;top:2px;transform:translateX(-50%);background:var(--green);color:#fff;font-weight:900;
-    font-size:11px;padding:3px 10px;border-radius:20px;opacity:0;transition:opacity .12s;z-index:5;
+    font-size:11px;padding:3px 10px;border-radius:20px;opacity:0;transition:opacity .12s;z-index:6;
     box-shadow:0 3px 10px rgba(111,186,44,.5);white-space:nowrap}
-  .lane.now{border-color:var(--green)}
+  .lane.now{outline:2px solid rgba(111,186,44,.4);outline-offset:-2px;border-radius:16px}
   .lane.hit .mk.land .dot.two{box-shadow:0 0 0 6px rgba(224,90,90,.2)}
 </style>
 </head>
@@ -109,34 +122,39 @@ function lerp(a,b,p){return a+(b-a)*p;} function cl(x){return x<0?0:x>1?1:x;} fu
 
 /* ---------- per-enemy timing ---------- */
 function calc(e){ var em=march(e), landAt=GATHER+em, refillAt=landAt+DELTA, R=myMarch(), sendAt=Math.max(0,refillAt-R);
-  var cue, gatherRemain=R-em-DELTA;
-  if(R<=0) cue="先填你的行军时间";
-  else if(gatherRemain>0) cue="他集结剩 "+mmss(gatherRemain)+" 时发兵";
-  else { var inc=R-DELTA; cue= inc<=0 ? "他发车后立刻发（你很快）" : "来袭落地倒计时 "+mmss(inc)+" 时发兵"; }
-  return {name:e.name||"敌鲸",em:em,landAt:landAt,refillAt:refillAt,sendAt:sendAt,R:R,cue:cue,ready:R>0}; }
+  var cue, short, gatherRemain=R-em-DELTA;
+  if(R<=0){ cue="先填你的行军时间"; short="先填行军"; }
+  else if(gatherRemain>0){ cue="他集结剩 "+mmss(gatherRemain)+" 时发兵"; short="集结剩 "+mmss(gatherRemain); }
+  else { var inc=R-DELTA; if(inc<=0){ cue="他发车后立刻发（你很快）"; short="发车后立刻"; } else { cue="来袭落地倒计时 "+mmss(inc)+" 时发兵"; short="落地倒计时 "+mmss(inc); } }
+  return {name:e.name||"敌鲸",em:em,landAt:landAt,refillAt:refillAt,sendAt:sendAt,R:R,cue:cue,short:short,ready:R>0}; }
+// piecewise x position % on a lane: 5:00 gather → left 40%, march → 40–86%, landing tail → 86–100%
+function xmap(t,landAt){ var p; if(t<=GATHER) p=t/GATHER*40; else if(t<=landAt) p=40+(t-GATHER)/Math.max(1,landAt-GATHER)*46; else p=86+Math.min(1,(t-landAt)/12)*14; return Math.max(0,Math.min(100,p)); }
 
 /* ---------- timeline strips (precise mm:ss) ---------- */
 function renderStrips(){ var box=$("refillPanel"); box.innerHTML="";
   if(!enemies.length){ box.innerHTML='<p class="hint">管理员还没发布敌方鲸鱼；战时可口头报点，或在上面「我自己设敌鲸」临时试算。</p>'; return; }
-  var W0=(anim&&anim.W0)||0, W1=(anim&&anim.W1)||(W0+1), span=Math.max(1,W1-W0);
-  function px(t){var p=(t-W0)/span*100;return Math.max(3,Math.min(97,p)).toFixed(2)+"%";}
-  enemies.forEach(function(e){ var c=calc(e);
+  enemies.forEach(function(e,i){ var c=calc(e); var nm=esc(e.name||("敌"+String.fromCharCode(65+i)));
+    var gx=xmap(GATHER,c.landAt), sx=xmap(c.sendAt,c.landAt), lx=xmap(c.landAt,c.landAt);
+    var blk=document.createElement("div"); blk.className="enemyblock";
     var el=document.createElement("div"); el.className="lane"; el.setAttribute("data-send",c.sendAt); el.setAttribute("data-land",c.landAt);
     el.innerHTML=
-      '<div class="lname">🔴 '+esc(e.name||"敌鲸")+' · 行军 '+mmss(c.em)+'</div>'+
+      '<div class="lname">🔴 '+nm+' · 行军 '+mmss(c.em)+'</div>'+
       '<div class="track"></div>'+
-      '<div class="gaplab" style="left:'+(((c.sendAt+c.landAt)/2-W0)/span*100).toFixed(1)+'%">你行军 '+mmss(c.R)+'</div>'+
-      '<div class="fire" style="left:'+px(c.sendAt)+'">发兵！</div>'+
-      '<div class="head" style="left:'+px(c.sendAt)+'"></div>'+
-      '<div class="mk send" style="left:'+px(c.sendAt)+'"><div class="dot"></div><div class="t">'+mmss(c.sendAt)+'</div><div class="l">你发兵</div></div>'+
-      '<div class="mk land" style="left:'+px(c.landAt)+'"><div class="dot two"></div><div class="t">'+mmss(c.landAt)+'</div><div class="l">敌落地·补满✓</div></div>';
-    box.appendChild(el);
-    // big cue row
+      '<div class="gband" style="width:'+gx.toFixed(1)+'%"></div>'+
+      '<div class="gbl" style="left:'+(gx/2).toFixed(1)+'%">敌集结 5:00（加速）</div>'+
+      '<div class="depart" style="left:'+gx.toFixed(1)+'%"><i></i></div>'+
+      '<div class="gaplab" style="left:'+((sx+lx)/2).toFixed(1)+'%">你行军 '+mmss(c.R)+'</div>'+
+      '<div class="fire" style="left:'+sx.toFixed(1)+'%">发兵！</div>'+
+      '<div class="head" style="left:'+sx.toFixed(1)+'%"></div>'+
+      '<div class="mk send" style="left:'+sx.toFixed(1)+'%"><div class="dot"></div><div class="l hi" style="color:var(--green-deep)">你发兵</div><div class="l">'+esc(c.short)+'</div></div>'+
+      '<div class="mk land" style="left:'+lx.toFixed(1)+'%"><div class="dot two"></div><div class="l hi" style="color:var(--coral)">敌落地</div><div class="l">补满✓</div></div>';
+    blk.appendChild(el);
     var cue=document.createElement("div"); cue.className="erow";
-    cue.innerHTML='<div class="et"><b>'+esc(e.name||"敌鲸")+'</b> · 你行军 '+mmss(c.R)+'</div>'+
-      '<div class="cue" data-cue>'+(c.ready?esc(c.cue):'<span style="color:var(--brown3)">'+esc(c.cue)+'</span>')+'</div>'+
+    cue.innerHTML='<div class="et"><b>'+nm+'</b> · 敌集结 5:00 · 你行军 '+mmss(c.R)+'</div>'+
+      '<div class="cue">'+(c.ready?esc(c.cue):'<span style="color:var(--brown3)">'+esc(c.cue)+'</span>')+'</div>'+
       (c.ready?'<div class="note">补兵在它落地后≈'+DELTA+'秒到，正好补满 ✓</div>':'');
-    box.appendChild(cue);
+    blk.appendChild(cue);
+    box.appendChild(blk);
   });
 }
 function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");}
@@ -169,19 +187,18 @@ function rebuild(){ buildBase(); anim={};
   anim.enemies=Ed.map(function(e,i){ var c=calc(e); maxLand=Math.max(maxLand,c.refillAt);
     var ang=Math.PI*(0.5 - (n===1?0:(i/(n-1)-0.5))*0.9); // spread across top arc
     var sx=cx+Math.cos(ang)*150, sy=cy-Math.abs(Math.sin(ang))*92-18;
-    var o={c:c,sx:sx,sy:sy,travel:Math.min(110,c.landAt)};
+    var o={c:c,sx:sx,sy:sy};
+    o.aura=E("circle",{cx:sx,cy:sy,r:14,fill:"none",stroke:C.yellow,"stroke-width":2.5,opacity:0,"stroke-dasharray":"3 5"}); svgEl.appendChild(o.aura);
     o.dot=E("circle",{cx:sx,cy:sy,r:11,fill:C.coral,opacity:0,stroke:"#fff","stroke-width":2}); svgEl.appendChild(o.dot);
-    o.eye=E("circle",{cx:sx,cy:sy,r:0,fill:"#fff",opacity:0}); svgEl.appendChild(o.eye); // simple
     o.cd=E("text",{x:sx,y:sy-15,"text-anchor":"middle",fill:C.coral,"font-size":10,"font-weight":800,opacity:0}); svgEl.appendChild(o.cd);
     o.bub=[0,1,2].map(function(){var d=E("circle",{cx:bx,cy:by,r:4,fill:C.mint,opacity:0,stroke:"#fff","stroke-width":1.5});svgEl.appendChild(d);return d;});
     return o;
   });
-  // shared time window for BOTH radar and timeline (so every time matches)
-  anim.W0=Math.max(0, Math.min.apply(null, anim.enemies.map(function(o){return Math.min(o.c.landAt-o.travel, o.c.sendAt);}))-5);
+  // window starts at rally-open (0) so the 5:00 gather is shown; both radar+timeline share it
   anim.W1=Math.max.apply(null, anim.enemies.map(function(o){return o.c.refillAt;}))+12;
   Tend=anim.W1;
-  var sc=$("scrub"); sc.min=Math.round(anim.W0); sc.max=Math.round(anim.W1);
-  tNow=anim.W0;
+  var sc=$("scrub"); sc.min=0; sc.max=Math.round(anim.W1);
+  tNow=0;
 }
 function shieldVal(t){ var v=1; anim.enemies.forEach(function(o){ if(t>=o.c.landAt) v-=0.5; if(t>=o.c.refillAt) v+=0.5; }); return cl(v); }
 function renderAnim(t){ if(!anim) return;
@@ -189,28 +206,29 @@ function renderAnim(t){ if(!anim) return;
   anim.castle.setAttribute("stroke", sv<0.7?C.coral:C.brown);
   var anyImp=false, anyGlow=false;
   anim.enemies.forEach(function(o){ var c=o.c;
-    var ap=sg(t, c.landAt-o.travel, c.landAt);
-    if(t<c.landAt-o.travel){ o.dot.setAttribute("opacity",.25); o.cd.setAttribute("opacity",0); o.dot.setAttribute("cx",o.sx);o.dot.setAttribute("cy",o.sy); }
-    else if(t<c.landAt){ o.dot.setAttribute("opacity",1); var x=lerp(o.sx,cx,ap),y=lerp(o.sy,cy,ap); o.dot.setAttribute("cx",x);o.dot.setAttribute("cy",y);
-      o.cd.setAttribute("opacity",1);o.cd.setAttribute("x",x);o.cd.setAttribute("y",y-15);o.cd.textContent="落地 "+(c.landAt-t).toFixed(0)+"s"; }
-    else { o.dot.setAttribute("opacity",0); o.cd.setAttribute("opacity",0); }
-    if(t>=c.landAt && t<c.landAt+1.2) anyImp=true;
-    // your refill bubbles
+    if(t<GATHER){ // ① 敌集结 5:00（加速展示）：在出生点蓄力
+      o.dot.setAttribute("opacity",.9); o.dot.setAttribute("cx",o.sx); o.dot.setAttribute("cy",o.sy);
+      var pu=0.5+0.5*Math.sin(t*0.5); o.aura.setAttribute("opacity",.4+.4*pu); o.aura.setAttribute("r",(15+5*pu).toFixed(1)); o.aura.setAttribute("cx",o.sx); o.aura.setAttribute("cy",o.sy);
+      o.cd.setAttribute("opacity",1); o.cd.setAttribute("x",o.sx); o.cd.setAttribute("y",o.sy-17); o.cd.setAttribute("fill",C.brown2); o.cd.textContent="集结 "+mmss(GATHER-t);
+    } else if(t<c.landAt){ // ② 敌发车→行军，飞向王城
+      o.aura.setAttribute("opacity",0); var ap=sg(t,GATHER,c.landAt); var x=lerp(o.sx,cx,ap),y=lerp(o.sy,cy,ap);
+      o.dot.setAttribute("opacity",1); o.dot.setAttribute("cx",x); o.dot.setAttribute("cy",y);
+      o.cd.setAttribute("opacity",1); o.cd.setAttribute("x",x); o.cd.setAttribute("y",y-15); o.cd.setAttribute("fill",C.coral); o.cd.textContent="落地 "+mmss(c.landAt-t);
+    } else { o.dot.setAttribute("opacity",0); o.cd.setAttribute("opacity",0); o.aura.setAttribute("opacity",0); }
+    if(t>=c.landAt && t<c.landAt+1.5) anyImp=true;
+    // ③ 你的补兵：发兵时刻(可在敌集结期间)launch → 落地后≈DELTA到达补满
     var rp=sg(t,c.sendAt,c.refillAt), on=t>=c.sendAt && t<c.refillAt;
     o.bub.forEach(function(d,k){ if(on){ var ox=(k-1)*7; d.setAttribute("opacity",.95); d.setAttribute("cx",lerp(bx+ox,cx+ox,rp)); d.setAttribute("cy",lerp(by,cy,rp)); } else d.setAttribute("opacity",0); });
-    if(t>=c.refillAt-0.6 && t<c.refillAt+1.4) anyGlow=true;
+    if(t>=c.refillAt-0.6 && t<c.refillAt+1.6) anyGlow=true;
   });
-  if(anyImp){ var ip=(t%1.2)/1.2; anim.imp.setAttribute("opacity",1-ip); anim.imp.setAttribute("r",16+ip*30); } else anim.imp.setAttribute("opacity",0);
-  anim.glow.setAttribute("opacity", anyGlow?0.8:0);
-  // phase label
+  if(anyImp){ var ip=(t%1.5)/1.5; anim.imp.setAttribute("opacity",1-ip); anim.imp.setAttribute("r",16+ip*30); } else anim.imp.setAttribute("opacity",0);
+  anim.glow.setAttribute("opacity", anyGlow?0.85:0);
   var minLand=Math.min.apply(null,anim.enemies.map(function(o){return o.c.landAt;}));
-  $("phaselab").textContent = t<minLand-1 ? "敌方来袭中…盯紧落地" : (sv<0.7? "护盾告急 → 快补兵！" : "✅ 卡间隙补满、弹回敌人");
-  // sync timeline playheads with the radar (same t, same window)
-  var W0=anim.W0||0, W1=anim.W1||(W0+1), sp=Math.max(1,W1-W0);
+  $("phaselab").textContent = t<GATHER ? "① 敌方集结中（加速）…" : (t<minLand-1 ? "② 敌方来袭 → 盯紧落地" : (sv<0.7? "③ 护盾告急 → 快补兵！" : "✅ 卡间隙补满、弹回敌人"));
+  // sync timeline playheads with the radar (same t, same piecewise window → 时间全部匹配)
   document.querySelectorAll("#refillPanel .lane").forEach(function(L){
     var s=+L.getAttribute("data-send"), land=+L.getAttribute("data-land");
-    var hp=Math.max(3,Math.min(97,(t-W0)/sp*100));
-    var h=L.querySelector(".head"); if(h) h.style.left=hp.toFixed(2)+"%";
+    var h=L.querySelector(".head"); if(h) h.style.left=xmap(t,land).toFixed(2)+"%";
     var fire=L.querySelector(".fire"); if(fire) fire.style.opacity=(t>=s-2&&t<=s+4)?1:0;
     L.classList.toggle("now", t>=s-3 && t<=land);
     L.classList.toggle("hit", t>=land);
@@ -219,8 +237,13 @@ function renderAnim(t){ if(!anim) return;
 /* playback */
 var tNow=0,playing=true,lastTs=null,speed=1;
 function frame(ts){ if(lastTs==null)lastTs=ts; var dt=(ts-lastTs)/1000; lastTs=ts; if(!anim){requestAnimationFrame(frame);return;}
-  var W0=anim.W0||0, W1=anim.W1||(W0+1), span=Math.max(1,W1-W0); speed=span/7.5; // full window loops in ~7.5s
-  if(playing){ tNow=W0+((tNow-W0+dt*speed)%span); $("scrub").value=Math.round(tNow); }
+  var W1=anim.W1||(GATHER+60);
+  if(playing){
+    var gSpd=GATHER/2.6, aSpd=Math.max(1,(W1-GATHER))/4.6;       // 集结5min压成~2.6s；之后动作~4.6s
+    tNow += dt*(tNow<GATHER?gSpd:aSpd);
+    if(tNow>=W1) tNow=0;
+    $("scrub").value=Math.round(tNow);
+  }
   renderAnim(tNow); requestAnimationFrame(frame); }
 
 /* ---------- data: cloud plan + local override ---------- */
