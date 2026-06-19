@@ -13,8 +13,11 @@
   .lane .mk.land .dot.two{background:linear-gradient(90deg,var(--coral) 0 50%,var(--mint) 50% 100%)}
   .lane .mk.land .t{color:var(--coral)}
   .lane .gaplab{position:absolute;top:38px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--brown2);white-space:nowrap}
-  .fire{display:inline-block;background:var(--green);color:#fff;font-weight:900;font-size:11px;padding:2px 9px;border-radius:20px;margin-left:6px;animation:pop .5s ease}
-  @keyframes pop{from{transform:scale(.7)}to{transform:scale(1)}}
+  .lane .fire{position:absolute;top:2px;transform:translateX(-50%);background:var(--green);color:#fff;font-weight:900;
+    font-size:11px;padding:3px 10px;border-radius:20px;opacity:0;transition:opacity .12s;z-index:5;
+    box-shadow:0 3px 10px rgba(111,186,44,.5);white-space:nowrap}
+  .lane.now{border-color:var(--green)}
+  .lane.hit .mk.land .dot.two{box-shadow:0 0 0 6px rgba(224,90,90,.2)}
 </style>
 </head>
 <body>
@@ -115,17 +118,17 @@ function calc(e){ var em=march(e), landAt=GATHER+em, refillAt=landAt+DELTA, R=my
 /* ---------- timeline strips (precise mm:ss) ---------- */
 function renderStrips(){ var box=$("refillPanel"); box.innerHTML="";
   if(!enemies.length){ box.innerHTML='<p class="hint">管理员还没发布敌方鲸鱼；战时可口头报点，或在上面「我自己设敌鲸」临时试算。</p>'; return; }
+  var W0=(anim&&anim.W0)||0, W1=(anim&&anim.W1)||(W0+1), span=Math.max(1,W1-W0);
+  function px(t){var p=(t-W0)/span*100;return Math.max(3,Math.min(97,p)).toFixed(2)+"%";}
   enemies.forEach(function(e){ var c=calc(e);
-    var s=c.sendAt, f=c.refillAt, gap=Math.max(1,f-s);
-    var win0=s-gap*0.20, win1=f+gap*0.20, span=Math.max(1,win1-win0);
-    function px(t){var p=(t-win0)/span*100;return Math.max(8,Math.min(92,p)).toFixed(1)+"%";}
-    var el=document.createElement("div"); el.className="lane"; el.setAttribute("data-send",s); el.setAttribute("data-land",c.landAt);
+    var el=document.createElement("div"); el.className="lane"; el.setAttribute("data-send",c.sendAt); el.setAttribute("data-land",c.landAt);
     el.innerHTML=
       '<div class="lname">🔴 '+esc(e.name||"敌鲸")+' · 行军 '+mmss(c.em)+'</div>'+
       '<div class="track"></div>'+
-      '<div class="gaplab" style="left:'+(((s+f)/2-win0)/span*100).toFixed(1)+'%">你行军 '+mmss(c.R)+'</div>'+
-      '<div class="head" style="left:'+px(s)+'"></div>'+
-      '<div class="mk send" style="left:'+px(s)+'"><div class="dot"></div><div class="t">'+mmss(s)+'</div><div class="l">你发兵</div></div>'+
+      '<div class="gaplab" style="left:'+(((c.sendAt+c.landAt)/2-W0)/span*100).toFixed(1)+'%">你行军 '+mmss(c.R)+'</div>'+
+      '<div class="fire" style="left:'+px(c.sendAt)+'">发兵！</div>'+
+      '<div class="head" style="left:'+px(c.sendAt)+'"></div>'+
+      '<div class="mk send" style="left:'+px(c.sendAt)+'"><div class="dot"></div><div class="t">'+mmss(c.sendAt)+'</div><div class="l">你发兵</div></div>'+
       '<div class="mk land" style="left:'+px(c.landAt)+'"><div class="dot two"></div><div class="t">'+mmss(c.landAt)+'</div><div class="l">敌落地·补满✓</div></div>';
     box.appendChild(el);
     // big cue row
@@ -173,10 +176,12 @@ function rebuild(){ buildBase(); anim={};
     o.bub=[0,1,2].map(function(){var d=E("circle",{cx:bx,cy:by,r:4,fill:C.mint,opacity:0,stroke:"#fff","stroke-width":1.5});svgEl.appendChild(d);return d;});
     return o;
   });
-  Tend=maxLand+18;
-  anim.Tstart=Math.max(0, Math.min.apply(null, anim.enemies.map(function(o){return o.c.landAt-o.travel;}))-8);
-  var sc=$("scrub"); sc.min=Math.round(anim.Tstart); sc.max=Math.round(Tend);
-  tNow=anim.Tstart;
+  // shared time window for BOTH radar and timeline (so every time matches)
+  anim.W0=Math.max(0, Math.min.apply(null, anim.enemies.map(function(o){return Math.min(o.c.landAt-o.travel, o.c.sendAt);}))-5);
+  anim.W1=Math.max.apply(null, anim.enemies.map(function(o){return o.c.refillAt;}))+12;
+  Tend=anim.W1;
+  var sc=$("scrub"); sc.min=Math.round(anim.W0); sc.max=Math.round(anim.W1);
+  tNow=anim.W0;
 }
 function shieldVal(t){ var v=1; anim.enemies.forEach(function(o){ if(t>=o.c.landAt) v-=0.5; if(t>=o.c.refillAt) v+=0.5; }); return cl(v); }
 function renderAnim(t){ if(!anim) return;
@@ -200,17 +205,22 @@ function renderAnim(t){ if(!anim) return;
   // phase label
   var minLand=Math.min.apply(null,anim.enemies.map(function(o){return o.c.landAt;}));
   $("phaselab").textContent = t<minLand-1 ? "敌方来袭中…盯紧落地" : (sv<0.7? "护盾告急 → 快补兵！" : "✅ 卡间隙补满、弹回敌人");
-  // sync strips
-  var lanes=document.querySelectorAll("#refillPanel .lane");
-  lanes.forEach(function(L){ var s=+L.getAttribute("data-send"), land=+L.getAttribute("data-land");
+  // sync timeline playheads with the radar (same t, same window)
+  var W0=anim.W0||0, W1=anim.W1||(W0+1), sp=Math.max(1,W1-W0);
+  document.querySelectorAll("#refillPanel .lane").forEach(function(L){
+    var s=+L.getAttribute("data-send"), land=+L.getAttribute("data-land");
+    var hp=Math.max(3,Math.min(97,(t-W0)/sp*100));
+    var h=L.querySelector(".head"); if(h) h.style.left=hp.toFixed(2)+"%";
+    var fire=L.querySelector(".fire"); if(fire) fire.style.opacity=(t>=s-2&&t<=s+4)?1:0;
     L.classList.toggle("now", t>=s-3 && t<=land);
-    var h=L.querySelector(".head"); if(h){ /* keep head at send mark (static reference) */ } });
+    L.classList.toggle("hit", t>=land);
+  });
 }
 /* playback */
 var tNow=0,playing=true,lastTs=null,speed=1;
 function frame(ts){ if(lastTs==null)lastTs=ts; var dt=(ts-lastTs)/1000; lastTs=ts; if(!anim){requestAnimationFrame(frame);return;}
-  var Ts=anim.Tstart||0, span=Math.max(1,Tend-Ts); speed=span/7; // action window loops in ~7s
-  if(playing){ tNow=Ts+((tNow-Ts+dt*speed)%span); $("scrub").value=Math.round(tNow); }
+  var W0=anim.W0||0, W1=anim.W1||(W0+1), span=Math.max(1,W1-W0); speed=span/7.5; // full window loops in ~7.5s
+  if(playing){ tNow=W0+((tNow-W0+dt*speed)%span); $("scrub").value=Math.round(tNow); }
   renderAnim(tNow); requestAnimationFrame(frame); }
 
 /* ---------- data: cloud plan + local override ---------- */
@@ -235,7 +245,7 @@ function renderLocal(){ var box=$("localList"); box.innerHTML=""; localEnemies.f
 function enemyRow(e,onDel,onChg){ var el=document.createElement("div"); el.className="foe";
   el.innerHTML='<div class="r1"><input class="nm" placeholder="敌鲸名" value="'+esc(e.name||"")+'" data-k="name">'+
     '<span class="mmss"><input type="number" min="0" value="'+(e.mm||0)+'" data-k="mm" style="width:46px;text-align:center;font-family:var(--mono)"><span class="u">分</span><span class="c">:</span>'+
-    '<input type="number" min="0" max="59" value="'+pad(e.ss||0)+'" data-k="ss" style="width:46px;text-align:center;font-family:var(--mono)"><span class="u">秒</span></span>'+
+    '<input type="number" min="0" max="59" value="'+(e.ss||0)+'" data-k="ss" style="width:46px;text-align:center;font-family:var(--mono)"><span class="u">秒</span></span>'+
     '<button class="del">×</button></div>';
   el.addEventListener("input",function(ev){var k=ev.target.getAttribute("data-k");if(!k)return;var v=ev.target.value; if(k==="mm")v=Math.max(0,+v||0); if(k==="ss")v=Math.min(59,Math.max(0,+v||0)); e[k]=(k==="name")?v:(+v||0); onChg&&onChg();});
   el.querySelector(".del").addEventListener("click",function(){onDel&&onDel();});
@@ -265,7 +275,7 @@ $("addEnemy").addEventListener("click",function(){adminEnemies.push({name:"敌"+
 $("pubBtn").addEventListener("click",publish);
 $("adminUnlock").addEventListener("click",function(){ requireAuth("管理密码：").then(function(ok){ if(!ok) return;
   try{ var s=JSON.parse(localStorage.getItem(LS_NAME)||"null"); if(s&&s.name) adminName=s.name; }catch(e){}
-  if(!adminName){ adminName=(prompt("你的名字（署名，可留空）：")||"").trim().slice(0,24); try{localStorage.setItem(LS_NAME,JSON.stringify({ok:true,name:adminName}));}catch(e){} }
+  if(!adminName){ adminName="管理"; try{localStorage.setItem(LS_NAME,JSON.stringify({ok:true,name:adminName}));}catch(e){} }
   adminEnemies = (cloudEnemies.length?cloudEnemies:[{name:"敌A",mm:1,ss:10}]).map(function(e){return {name:e.name,mm:e.mm,ss:e.ss};});
   $("adminGate").classList.add("hide"); $("adminBody").classList.remove("hide"); renderAdmin(); toast("已解锁管理 ✓"); }); });
 
