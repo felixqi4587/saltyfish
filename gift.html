@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f8f8f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>咸鱼小队 · 礼包码</title>
-<link rel="stylesheet" href="app.css?v=9">
+<link rel="stylesheet" href="app.css?v=10">
 </head>
 <body>
 <div class="wrap">
@@ -82,7 +82,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 <script>
 (function(){
 "use strict";
@@ -95,9 +95,10 @@ var lookupT={};
 function lookupName(m,view){ var fid=m.fid; if(!fid||fid.length<4){ view.innerHTML='<span style="color:var(--brown3)">'+T("g_name_fill")+'</span>'; return; }
   clearTimeout(lookupT[fid]); lookupT[fid]=setTimeout(function(){
     authedFetch("/lookup",{fid:fid}).then(function(r){return r.json();}).then(function(j){ if(m.fid!==fid) return;
-      if(j&&j.ok&&j.nickname){ m.name=j.nickname; view.innerHTML='<b style="color:var(--mint-deep)">'+esc(j.nickname)+'</b>'; scheduleSave(); }
-      else { view.innerHTML='<span style="color:var(--coral)">'+T("g_name_notfound")+'</span>'; } })
-    .catch(function(){ view.innerHTML='<span style="color:var(--brown3)">'+T("g_name_failed")+'</span>'; }); }, 600); }
+      // always trust the official redemption API name; overwrite any stale/typed cache
+      if(j&&j.ok&&j.nickname){ if(m.name!==j.nickname){ m.name=j.nickname; scheduleSave(); } view.innerHTML='<b style="color:var(--mint-deep)">'+esc(j.nickname)+'</b>'; }
+      else if(!m.name){ view.innerHTML='<span style="color:var(--coral)">'+T("g_name_notfound")+'</span>'; } })
+    .catch(function(){ if(!m.name) view.innerHTML='<span style="color:var(--brown3)">'+T("g_name_failed")+'</span>'; }); }, 600); }
 function renderRoster(){ var box=$("rosterList"); if(!box) return; box.innerHTML="";
   if(!roster.length){ box.innerHTML='<p class="hint">'+T("g_roster_empty")+'</p>'; }
   roster.forEach(function(m,idx){ var el=document.createElement("div"); el.className="whale";
@@ -108,7 +109,7 @@ function renderRoster(){ var box=$("rosterList"); if(!box) return; box.innerHTML
     var inp=el.querySelector('[data-k="fid"]'), view=el.querySelector('.nmview');
     inp.addEventListener("input",function(){ m.fid=inp.value.replace(/\D/g,""); m.name=""; view.innerHTML='<span style="color:var(--brown3)">'+T("g_name_query")+'</span>'; scheduleSave(); lookupName(m,view); });
     el.querySelector(".del").addEventListener("click",function(){roster.splice(idx,1);renderRoster();scheduleSave();});
-    if(m.fid && !m.name) lookupName(m,view);
+    if(m.fid) lookupName(m,view);   // always refresh from the official API (don't trust stale cache)
     box.appendChild(el); }); }
 function lsRoster(){ try{return JSON.parse(localStorage.getItem(LS_ROSTER)||"[]");}catch(e){return [];} }
 function loadRoster(){
