@@ -55,6 +55,8 @@
   .lane.fx-land .edot.land .d{animation:beat .5s ease-in-out infinite;box-shadow:0 0 0 7px rgba(224,90,90,.35)}
   .lane.fx-refill .odot.refill .d{animation:beat .5s ease-in-out infinite;box-shadow:0 0 0 7px rgba(25,200,185,.35)}
   .lane.now{outline:2px solid rgba(111,186,44,.3);outline-offset:-2px;border-radius:16px}
+  /* active source toggle (本机 vs 管理发布) */
+  #useLocal.on,#useCloud.on{border-color:var(--mint);background:linear-gradient(180deg,#eafaf7,var(--mint-bg));color:var(--mint-deep);box-shadow:0 4px 12px -6px rgba(25,200,185,.6)}
 </style>
 </head>
 <body>
@@ -278,11 +280,13 @@ function setNet(s,key,vars){ netState={s:s,key:key,vars:vars||{}}; renderNet(); 
 function renderNet(){ $("netdot").className="dot"+(netState.s?(" "+netState.s):""); $("netlab").textContent=TF(netState.key,netState.vars); }
 function pickEnemies(){ enemies=(useLocalFlag&&localEnemies.length)?localEnemies.slice():cloudEnemies.slice(); rebuildAll(); }
 function rebuildAll(){ rebuild(); renderStrips(); }
+function seedLocalIfEmpty(){ if(!localEnemies.length && cloudEnemies.length){ localEnemies=cloudEnemies.map(function(e){return {name:e.name,mm:e.mm,ss:e.ss};}); saveLocal(); renderLocal(); } }
+function setMode(local){ useLocalFlag=!!local; var ul=$("useLocal"),uc=$("useCloud"); if(ul)ul.classList.toggle("on",useLocalFlag); if(uc)uc.classList.toggle("on",!useLocalFlag); pickEnemies(); }
 function loadPlan(){ setNet("","d_net_connecting");
   fetch(WBASE+"/plan",{cache:"no-store"}).then(function(r){return r.json();}).then(function(o){ var p=o&&o.plan; baseUpdatedAt=o&&o.updatedAt||null;
     cloudEnemies=(p&&p.enemyWhales||[]).map(function(e){return {name:e.name||"",mm:+e.mm||0,ss:+e.ss||0};});
     if(o&&o.updatedAt) setNet("live","d_net_pub",{who:(o.updatedBy||"—"),t:clk(Date.parse(o.updatedAt))}); else setNet("live","d_net_nopub",{});
-    pickEnemies();
+    seedLocalIfEmpty(); pickEnemies();
   }).catch(function(){ setNet("off","d_net_off",{}); cloudEnemies=[]; pickEnemies(); }); }
 
 function lsLocal(){ try{return JSON.parse(localStorage.getItem(LS_LOCAL)||"[]");}catch(e){return[];} }
@@ -301,7 +305,9 @@ function publish(){ var b=$("pubBtn"); b.disabled=true; var old=b.textContent; b
   var plan={v:6,side:"right",tactics:"",castleWhales:[],turretLeaders:["","","",""],enemyWhales:adminEnemies.map(function(e){return {name:(e.name||"").slice(0,16),mm:+e.mm||0,ss:+e.ss||0};}),giftCodes:[]};
   authedFetch("/plan",{name:adminName,plan:plan,baseUpdatedAt:baseUpdatedAt}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});})
    .then(function(res){ b.disabled=false;b.textContent=old;
-     if(res.s===200&&res.j.ok){ baseUpdatedAt=res.j.updatedAt; $("pubMsg").innerHTML='<span style="color:var(--green-deep)">'+T("d_pub_ok")+'</span>'; toast(T("d_t_pub")); loadPlan(); }
+     if(res.s===200&&res.j.ok){ baseUpdatedAt=res.j.updatedAt;
+       cloudEnemies=plan.enemyWhales.map(function(e){return {name:e.name||"",mm:+e.mm||0,ss:+e.ss||0};}); /* trust our own write — show it now, don't wait on the re-fetch */
+       $("pubMsg").innerHTML='<span style="color:var(--green-deep)">'+T("d_pub_ok")+'</span>'; toast(T("d_t_pub")); setMode(false); loadPlan(); }
      else if(res.s===409){ if(confirm(T("d_confirm_over"))){ baseUpdatedAt=res.j.current?res.j.current.updatedAt:baseUpdatedAt; publish(); } }
      else $("pubMsg").innerHTML='<span style="color:var(--coral)">'+T("d_pub_fail")+'</span>'; })
    .catch(function(){ b.disabled=false;b.textContent=old; $("pubMsg").innerHTML='<span style="color:var(--coral)">'+T("d_pub_neterr")+'</span>'; }); }
@@ -311,8 +317,8 @@ function publish(){ var b=$("pubBtn"); b.disabled=true; var old=b.textContent; b
 $("pp").addEventListener("click",function(){playing=!playing;$("pp").textContent=playing?"⏸":"▶";lastTs=null;});
 $("scrub").addEventListener("input",function(){playing=false;$("pp").textContent="▶"; anim.p=(+$("scrub").value)/1000; anim.holdUntil=0; tNow=invmap(anim.p); renderAnim(tNow,null,0);});
 $("addLocal").addEventListener("click",function(){localEnemies.push({name:T("d_enemy")+String.fromCharCode(65+localEnemies.length),mm:1,ss:0});saveLocal();renderLocal();});
-$("useLocal").addEventListener("click",function(){useLocalFlag=true;pickEnemies();toast(T("d_t_local"));});
-$("useCloud").addEventListener("click",function(){useLocalFlag=false;pickEnemies();toast(T("d_t_cloud"));});
+$("useLocal").addEventListener("click",function(){seedLocalIfEmpty();setMode(true);toast(T("d_t_local"));});
+$("useCloud").addEventListener("click",function(){setMode(false);toast(T("d_t_cloud"));});
 $("addEnemy").addEventListener("click",function(){adminEnemies.push({name:T("d_enemy")+String.fromCharCode(65+adminEnemies.length),mm:1,ss:0});renderAdmin();});
 $("pubBtn").addEventListener("click",publish);
 $("adminUnlock").addEventListener("click",function(){ requireAuth(T("d_pw_admin")).then(function(ok){ if(!ok) return;
@@ -325,7 +331,7 @@ $("adminUnlock").addEventListener("click",function(){ requireAuth(T("d_pw_admin"
 window.onLangChange=function(){ rebuildAll(); renderLocal(); if(!$("adminBody").classList.contains("hide")) renderAdmin(); renderNet(); };
 
 /* ---- init ---- */
-loadMarch(); localEnemies=lsLocal(); buildBase(); renderLocal(); loadPlan(); startClock(); initI18n(); requestAnimationFrame(frame);
+loadMarch(); localEnemies=lsLocal(); buildBase(); renderLocal(); $("useCloud").classList.add("on"); loadPlan(); startClock(); initI18n(); requestAnimationFrame(frame);
 })();
 </script>
 </body>
