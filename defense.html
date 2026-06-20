@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f8f8f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>咸鱼小队 · 防守支援</title>
-<link rel="stylesheet" href="app.css?v=8">
+<link rel="stylesheet" href="app.css?v=9">
 <style>
   /* enemy blocks (clear 敌A/敌B separation) */
   .enemyblock{border:2px solid var(--line);border-radius:20px;padding:8px;margin-bottom:16px;
@@ -19,14 +19,25 @@
   .lane .mk.refill .dot{background:var(--mint)}
   .lane .mk.land .dot{background:var(--coral)}
   .lane .mk.send .dot{transition:box-shadow .15s,transform .15s}
-  .lane .endlab{position:absolute;top:0;transform:translateX(-50%);font-size:9.5px;font-weight:900;white-space:nowrap}
+  /* stems anchoring the above-track land/refill dots down to the ruler */
+  .lane .mk.land .dot::after,.lane .mk.refill .dot::after{content:"";position:absolute;left:50%;top:13px;width:2px;height:33px;transform:translateX(-50%);opacity:.4;border-radius:2px}
+  .lane .mk.land .dot::after{background:var(--coral)}
+  .lane .mk.refill .dot::after{background:var(--mint)}
+  /* land / refill labels: 敌落地 above the dot, +1s 补满 below it (1s apart → never collide) */
+  .lane .landlab{position:absolute;top:0;transform:translateX(-50%);font-size:9.5px;font-weight:900;color:var(--coral);white-space:nowrap;z-index:3}
+  .lane .reflab{position:absolute;top:30px;transform:translateX(-50%);font-size:9.5px;font-weight:900;color:var(--mint-deep);white-space:nowrap;z-index:3}
+  /* 你行军 measured span: green band on the ruler from 你发兵 → 补满, with end-caps + pill */
+  .lane .mspan{position:absolute;top:56px;height:10px;border-radius:3px;background:rgba(111,186,44,.20);
+    border-left:2.5px solid var(--green-deep);border-right:2.5px solid var(--green-deep);z-index:1}
+  .lane .mpill{position:absolute;top:39px;transform:translateX(-50%);font-size:9.5px;font-weight:900;color:var(--green-deep);
+    background:var(--paper);padding:1px 7px;border-radius:9px;white-space:nowrap;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .lane .departlab{position:absolute;top:24px;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--brown2);white-space:nowrap}
   /* 敌集结 5:00 band + 发车 tick */
   .lane .gband{position:absolute;top:55px;height:12px;left:0;border-radius:6px;border:1.5px solid rgba(245,195,28,.55);
     background:repeating-linear-gradient(45deg,rgba(245,195,28,.34) 0 6px,rgba(245,195,28,.12) 6px 12px)}
   .lane .gbl{position:absolute;top:38px;transform:translateX(-50%);font-size:10px;font-weight:800;color:#b88a08;white-space:nowrap}
   .lane .depart{position:absolute;top:50px;transform:translateX(-50%);z-index:2}
   .lane .depart i{display:block;width:2px;height:22px;background:var(--brown2);opacity:.55;margin:0 auto}
-  .lane .gaplab{position:absolute;top:40px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--green-deep);white-space:nowrap}
   .lane .fire{position:absolute;top:0;transform:translateX(-50%);background:var(--green);color:#fff;font-weight:900;
     font-size:11px;padding:3px 11px;border-radius:20px;opacity:0;transition:opacity .12s;z-index:7;
     box-shadow:0 3px 10px rgba(111,186,44,.55);white-space:nowrap}
@@ -103,7 +114,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 <script>
 (function(){
 "use strict";
@@ -133,7 +144,7 @@ function calc(e){ var em=march(e), landAt=GATHER+em, refillAt=landAt+DELTA, R=my
   var cue, short, gatherRemain=R-em-DELTA;
   if(R<=0){ cue=T("d_cue_fill"); short=T("d_short_fill"); }
   else if(gatherRemain>0){ cue=TF("d_cue_gather",{x:mmss(gatherRemain)}); short=TF("d_short_gather",{x:mmss(gatherRemain)}); }
-  else { var inc=R-DELTA; if(inc<=0){ cue=T("d_cue_imm"); short=T("d_short_imm"); } else { cue=TF("d_cue_land",{x:mmss(inc)}); short=TF("d_short_land",{x:mmss(inc)}); } }
+  else { var afterLaunch=em+DELTA-R; if(afterLaunch<=0){ cue=T("d_cue_imm"); short=T("d_short_imm"); } else { cue=TF("d_cue_land",{x:mmss(afterLaunch)}); short=TF("d_short_land",{x:mmss(afterLaunch)}); } }
   return {name:e.name||T("d_whale"),em:em,landAt:landAt,refillAt:refillAt,sendAt:sendAt,R:R,cue:cue,short:short,ready:R>0}; }
 
 /* ---- timeline strips ---- */
@@ -149,13 +160,16 @@ function renderStrips(){ var box=$("refillPanel"); box.innerHTML="";
       '<div class="gband" style="width:'+gx.toFixed(1)+'%"></div>'+
       '<div class="gbl" style="left:'+(gx/2).toFixed(1)+'%">'+T("d_gather_band")+'</div>'+
       '<div class="depart" style="left:'+gx.toFixed(1)+'%"><i></i></div>'+
-      '<div class="gaplab" style="left:'+((sx+lx)/2).toFixed(1)+'%">'+TF("d_your_march",{x:mmss(c.R)})+'</div>'+
+      '<div class="departlab" style="left:'+gx.toFixed(1)+'%">'+T("d_depart")+'</div>'+
+      '<div class="mspan" style="left:'+sx.toFixed(2)+'%;width:'+Math.max(0,rx-sx).toFixed(2)+'%"></div>'+
+      '<div class="mpill" style="left:'+Math.min(80,(sx+rx)/2).toFixed(2)+'%">'+TF("d_your_march",{x:mmss(c.R)})+'</div>'+
       '<div class="fire" style="left:'+sx.toFixed(1)+'%">'+T("d_send_now")+'</div>'+
       '<div class="head" style="left:'+sx.toFixed(1)+'%"></div>'+
       '<div class="mk send" style="left:'+sx.toFixed(1)+'%"><div class="dot"></div><div class="l hi" style="color:var(--green-deep)">'+T("d_you_send")+'</div><div class="l">'+esc(c.short)+'</div></div>'+
       '<div class="mk land" style="left:'+lx.toFixed(2)+'%"><div class="dot"></div></div>'+
       '<div class="mk refill" style="left:'+rx.toFixed(2)+'%"><div class="dot"></div></div>'+
-      '<div class="endlab" style="left:'+Math.min(82,(lx+rx)/2).toFixed(2)+'%"><span style="color:var(--coral)">'+T("d_enemy_land")+'</span> <span style="color:var(--mint-deep)">'+T("d_refilled")+'</span></div>';
+      '<div class="landlab" style="left:'+Math.min(86,lx).toFixed(2)+'%">'+T("d_enemy_land")+'</div>'+
+      '<div class="reflab" style="left:'+Math.min(93,rx).toFixed(2)+'%">'+T("d_refill_plus")+'</div>';
     blk.appendChild(el);
     var cue=document.createElement("div"); cue.className="erow";
     cue.innerHTML='<div class="et"><b>'+nm+'</b> · '+TF("d_erow",{x:mmss(c.R)})+'</div>'+
