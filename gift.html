@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f8f8f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>咸鱼小队 · 礼包码</title>
-<link rel="stylesheet" href="app.css?v=14">
+<link rel="stylesheet" href="app.css?v=15">
 <style>
   /* redeem matrix — compact, collapsible per-member (scales when the roster grows) */
   #redeemLog .rlog-sum{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font:800 13px/1.4 var(--font);color:var(--brown)}
@@ -112,7 +112,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 <script>
 (function(){
 "use strict";
@@ -169,7 +169,7 @@ function loadAutoCodes(){ var box=$("autoCodes"); if(!box) return; box.textConte
    .catch(function(){ box.textContent=T("g_codes_failed"); }); }
 
 /* ---------- redeem log ---------- */
-function statusInfo(s){ var m={ok:[T("st_ok"),"var(--ok)"],already:[T("st_already"),"var(--ok)"],expired:[T("st_expired"),"var(--ac2)"],invalid:[T("st_invalid"),"var(--bad)"],usedup:[T("st_usedup"),"var(--ac2)"],limited:[T("st_limited"),"var(--ac2)"],bad_fid:[T("st_bad_fid"),"var(--bad)"],rate:[T("st_rate"),"var(--ac2)"],capped:[T("st_capped"),"var(--t3)"],err:[T("st_err"),"var(--bad)"]}; return m[s]||[s,"var(--t2)"]; }
+function statusInfo(s){ var m={ok:[T("st_ok"),"var(--ok)"],already:[T("st_already"),"var(--ok)"],expired:[T("st_expired"),"var(--ac2)"],invalid:[T("st_invalid"),"var(--bad)"],usedup:[T("st_usedup"),"var(--ac2)"],limited:[T("st_limited"),"var(--ac2)"],bad_fid:[T("st_bad_fid"),"var(--bad)"],rate:[T("st_rate"),"var(--ac2)"],capped:[T("st_capped"),"var(--t3)"],pending:[T("st_pending"),"var(--t3)"],err:[T("st_err"),"var(--bad)"]}; return m[s]||[s,"var(--t2)"]; }
 function dotColor(s){ if(s==="ok"||s==="already")return "var(--green-deep)"; if(s==="bad_fid")return "var(--coral)"; if(s==="expired"||s==="usedup"||s==="invalid"||s==="limited")return "var(--brown3)"; return "var(--mint-deep)"; }
 function renderLog(rec){ var log=$("redeemLog"); if(!log) return;
   var when=rec&&rec.ranAt?(clk(Date.parse(rec.ranAt))+" UTC"):"";
