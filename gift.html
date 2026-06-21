@@ -6,7 +6,27 @@
 <meta name="theme-color" content="#f8f8f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>咸鱼小队 · 礼包码</title>
-<link rel="stylesheet" href="app.css?v=13">
+<link rel="stylesheet" href="app.css?v=14">
+<style>
+  /* redeem matrix — compact, collapsible per-member (scales when the roster grows) */
+  #redeemLog .rlog-sum{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;font:800 13px/1.4 var(--font);color:var(--brown)}
+  #redeemLog .rlog-new{color:var(--green-deep);font-weight:900}
+  #redeemLog .rlog-leg{display:flex;gap:13px;flex-wrap:wrap;font-size:10.5px;color:var(--brown2);margin:6px 0 11px}
+  #redeemLog .rlog-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+  #redeemLog .mrow{border:1.5px solid var(--line);border-radius:12px;margin-bottom:7px;background:var(--paper);overflow:hidden}
+  #redeemLog .mrow>summary{list-style:none;display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer}
+  #redeemLog .mrow>summary::-webkit-details-marker{display:none}
+  #redeemLog .mname{font:800 13.5px/1 var(--font);color:var(--brown);flex:0 0 auto;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #redeemLog .mdots{flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  #redeemLog .mdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  #redeemLog .mcount{flex:0 0 auto;font:800 11.5px/1 var(--mono);padding:3px 9px;border-radius:20px}
+  #redeemLog .mcount.ok{color:var(--green-deep);background:#eaf7e0}
+  #redeemLog .mcount.warn{color:#b8860b;background:#fff3cf}
+  #redeemLog .mdetail{padding:2px 12px 10px;border-top:1px dashed var(--line)}
+  #redeemLog .mdr{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--line)}
+  #redeemLog .mdr b{color:var(--mint-deep);font-weight:800}
+  #redeemLog .mid{font-size:10px;color:var(--brown3);margin-top:5px;font-family:var(--mono)}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -46,6 +66,16 @@
         </div>
         <div id="dTokenMsg" class="hint" style="margin-top:8px"></div>
       </details>
+      <details style="background:none;border:none;box-shadow:none;padding:0;margin:6px 0 0">
+        <summary style="font-size:13px;padding:8px 0" data-i18n="g_notify_sum">🔔 兑换成功通知（Discord webhook）</summary>
+        <p class="hint" style="margin:2px 0 9px" data-i18n="g_notify_hint">想新码自动兑换后立刻收到提醒？在你的 Discord 频道建一个 Webhook，把 URL 粘进来 —— 新码全队兑换成功就会自动播报。</p>
+        <div style="display:flex;gap:8px">
+          <input id="nHook" type="password" placeholder="粘贴 Discord Webhook URL" data-i18n-ph="g_notify_ph" autocomplete="off" spellcheck="false"
+            style="flex:1;min-width:0;padding:11px 12px;border:1px solid var(--gold-line);border-radius:10px;background:var(--surface);color:var(--tx);font-size:13px">
+          <button class="btn amber" id="nHookBtn" style="white-space:nowrap;width:auto;padding:0 16px" data-i18n="g_connect">连接</button>
+        </div>
+        <div id="nHookMsg" class="hint" style="margin-top:8px"></div>
+      </details>
     </div>
     <div class="card">
       <h2 data-i18n="g_roster_title">👥 队员名单</h2>
@@ -82,7 +112,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 <script>
 (function(){
 "use strict";
@@ -140,8 +170,9 @@ function loadAutoCodes(){ var box=$("autoCodes"); if(!box) return; box.textConte
 
 /* ---------- redeem log ---------- */
 function statusInfo(s){ var m={ok:[T("st_ok"),"var(--ok)"],already:[T("st_already"),"var(--ok)"],expired:[T("st_expired"),"var(--ac2)"],invalid:[T("st_invalid"),"var(--bad)"],usedup:[T("st_usedup"),"var(--ac2)"],limited:[T("st_limited"),"var(--ac2)"],bad_fid:[T("st_bad_fid"),"var(--bad)"],rate:[T("st_rate"),"var(--ac2)"],capped:[T("st_capped"),"var(--t3)"],err:[T("st_err"),"var(--bad)"]}; return m[s]||[s,"var(--t2)"]; }
+function dotColor(s){ if(s==="ok"||s==="already")return "var(--green-deep)"; if(s==="bad_fid")return "var(--coral)"; if(s==="expired"||s==="usedup"||s==="invalid"||s==="limited")return "var(--brown3)"; return "var(--mint-deep)"; }
 function renderLog(rec){ var log=$("redeemLog"); if(!log) return;
-  var when=rec&&rec.ranAt?("（"+clk(Date.parse(rec.ranAt))+" UTC）"):"";
+  var when=rec&&rec.ranAt?(clk(Date.parse(rec.ranAt))+" UTC"):"";
   if(!rec||!rec.results||!rec.results.length){
     if(rec&&rec.count===0) log.innerHTML='<p class="hint">'+T("g_log_empty_roster")+'</p>';
     else if(rec&&rec.codes&&!rec.codes.length) log.innerHTML='<p class="hint">'+T("g_log_no_codes")+'</p>';
@@ -149,19 +180,29 @@ function renderLog(rec){ var log=$("redeemLog"); if(!log) return;
     return; }
   var groups=[], idx={};
   rec.results.forEach(function(r){ var k=r.fid; if(idx[k]==null){ idx[k]=groups.length; groups.push({fid:r.fid,name:r.name,rows:[]}); } groups[idx[k]].rows.push(r); });
-  var head='<div class="lab" style="margin-top:0">'+T("g_log_detail")+(rec.mode==="auto"?T("g_mode_auto"):(rec.mode==="discord"?T("g_mode_discord"):T("g_mode_manual")))+' '+when
-    +(rec.newSuccess?' · <span style="color:var(--ok)">'+T("g_new_redeemed")+rec.newSuccess+'</span>':'')+'</div>';
+  function isGot(s){return s==="ok"||s==="already";}
+  function isDead(s){return s==="expired"||s==="usedup"||s==="invalid"||s==="limited";}
+  groups.forEach(function(g){ g.got=g.rows.filter(function(r){return isGot(r.status);}).length; g.dead=g.rows.filter(function(r){return isDead(r.status);}).length; g.total=g.rows.length; g.gettable=g.total-g.dead; g.complete=(g.got>=g.gettable); });
+  groups.sort(function(a,b){ return (a.complete?1:0)-(b.complete?1:0) || (a.got/(a.gettable||1))-(b.got/(b.gettable||1)); }); // 还没补齐(有问题)的排前面
+  var mode=(rec.mode==="auto"?T("g_mode_auto"):(rec.mode==="discord"?T("g_mode_discord"):T("g_mode_manual")));
+  var done=groups.filter(function(g){return g.complete;}).length;
+  var head='<div class="rlog-sum"><span>'+T("g_log_detail")+mode+'</span>'
+    +'<span class="hint">'+esc(when)+' · '+groups.length+T("g_ppl")+'·'+(rec.codes?rec.codes.length:0)+T("g_codes_unit")+'</span>'
+    +(rec.newSuccess?'<span class="rlog-new">'+T("g_new_redeemed")+rec.newSuccess+'</span>':'')+'</div>'
+    +'<div class="rlog-leg"><span><i style="background:var(--green-deep)"></i>'+T("g_got")+'</span>'
+    +'<span><i style="background:var(--brown3)"></i>'+T("st_expired")+'/'+T("st_usedup")+'</span>'
+    +'<span><i style="background:var(--coral)"></i>'+T("st_err")+'</span>'
+    +'<span style="margin-left:auto;font-weight:800;color:var(--green-deep)">'+done+'/'+groups.length+' '+T("g_allgot")+'</span></div>';
   var body=groups.map(function(g){
-    var rows=g.rows.map(function(r){var si=statusInfo(r.status);
-      return '<div style="display:flex;gap:8px;align-items:center;font-size:12.5px;padding:5px 0 5px 10px;border-bottom:1px solid var(--line)">'
-        +'<b style="flex:1;min-width:0;color:var(--ac2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.code)+'</b>'
-        +'<span style="color:'+si[1]+';font-weight:700;white-space:nowrap">'+si[0]+'</span></div>'; }).join("");
-    var n=g.rows.filter(function(r){return r.status==="ok"||r.status==="already";}).length;
-    return '<div style="margin-top:10px">'
-      +'<div style="display:flex;gap:8px;align-items:baseline;font-weight:800;font-size:13.5px;padding:4px 0">'
-      +'<span>'+esc(g.name)+'</span><span class="hint" style="font-weight:500">'+T("g_id")+' '+esc(g.fid)+'</span>'
-      +'<span style="margin-left:auto;color:var(--ok);font-weight:700;font-size:12px">'+n+'/'+g.rows.length+' '+T("g_got")+'</span></div>'
-      +rows+'</div>'; }).join("");
+    var dots=g.rows.map(function(r){ return '<i class="mdot" title="'+esc(r.code)+': '+statusInfo(r.status)[0]+'" style="background:'+dotColor(r.status)+'"></i>'; }).join("");
+    var detail=g.rows.map(function(r){ var si=statusInfo(r.status);
+      return '<div class="mdr"><b>'+esc(r.code)+'</b><span style="color:'+si[1]+';font-weight:700">'+si[0]+'</span></div>'; }).join("");
+    var cnt=g.gettable?(g.got+'/'+g.gettable):'—';
+    return '<details class="mrow"'+(g.complete?'':' open')+'><summary>'
+      +'<span class="mname">'+esc(g.name||g.fid)+'</span>'
+      +'<span class="mdots">'+dots+'</span>'
+      +'<span class="mcount '+(g.complete?'ok':'warn')+'">'+cnt+'</span>'
+      +'</summary><div class="mdetail">'+detail+'<div class="mid">'+T("g_id")+' '+esc(g.fid)+'</div></div></details>'; }).join("");
   log.innerHTML=head+body; }
 function loadLast(){ fetch(WBASE+"/lastredeem",{cache:"no-store"}).then(function(r){return r.json();}).then(function(j){ if(j&&j.results&&j.results.length) renderLog(j); }).catch(function(){}); }
 function runRedeem(){ var b=$("runRedeem"), old=b.textContent; b.disabled=true; b.textContent=T("g_redeeming");
@@ -200,6 +241,16 @@ function saveDiscordToken(){ var inp=$("dToken"), msg=$("dTokenMsg"), b=$("dToke
      else msg.innerHTML='<span style="color:var(--bad)">'+T("g_dc_connfail")+esc((j&&j.error)||T("g_dc_tokinvalid"))+'</span>'; })
    .catch(function(){ b.disabled=false;b.textContent=old; msg.innerHTML='<span style="color:var(--bad)">'+T("g_neterr_timeout")+'。</span>'; }); }
 
+/* ---------- new-redeem notification (optional Discord webhook) ---------- */
+function saveNotify(){ var inp=$("nHook"),msg=$("nHookMsg"),b=$("nHookBtn"); var u=(inp.value||"").trim();
+  if(!u){ authedFetch("/notifytoken",{url:""}).then(function(){ msg.innerHTML='<span class="hint">'+T("g_notify_cleared")+'</span>'; }); return; }
+  var old=b.textContent; b.disabled=true; b.textContent=T("g_dc_connecting");
+  authedFetch("/notifytoken",{url:u}).then(function(r){return r.json();}).then(function(j){ b.disabled=false;b.textContent=old;
+    if(j&&j.ok&&j.set){ inp.value=""; msg.innerHTML='<span style="color:var(--green-deep)">'+T("g_notify_ok")+'</span>'; }
+    else msg.innerHTML='<span style="color:var(--coral)">'+esc((j&&j.error)||T("g_notify_fail"))+'</span>'; })
+  .catch(function(){ b.disabled=false;b.textContent=old; msg.innerHTML='<span style="color:var(--coral)">'+T("g_neterr_timeout")+'</span>'; }); }
+function loadNotify(){ var m=$("nHookMsg"); if(!m) return; fetch(WBASE+"/notifystatus",{cache:"no-store"}).then(function(r){return r.json();}).then(function(j){ if(j&&j.connected) m.innerHTML='<span style="color:var(--green-deep)">'+T("g_notify_on")+'</span>'; }).catch(function(){}); }
+
 /* ---------- gate + init ---------- */
 var inited=false;
 function initGift(){ if(inited) return; inited=true;
@@ -209,7 +260,9 @@ function initGift(){ if(inited) return; inited=true;
   $("ingestCode").addEventListener("keydown",function(e){ if(e.key==="Enter") ingestCode(); });
   $("dTokenBtn").addEventListener("click",saveDiscordToken);
   $("dToken").addEventListener("keydown",function(e){ if(e.key==="Enter") saveDiscordToken(); });
-  loadAutoCodes(); loadDiscordStatus(); loadRoster(); loadLast();
+  $("nHookBtn").addEventListener("click",saveNotify);
+  $("nHook").addEventListener("keydown",function(e){ if(e.key==="Enter") saveNotify(); });
+  loadAutoCodes(); loadDiscordStatus(); loadRoster(); loadLast(); loadNotify();
 }
 function openGate(){
   requireAuth(T("g_pw_gate")).then(function(ok){

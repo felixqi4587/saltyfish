@@ -119,6 +119,8 @@ window.I18N = {
     g_dc_nochan_full: "（无可读频道，确认 bot 已在你服务器、能看到那个频道）", g_dc_connected1: "✓ 已连接！每分钟直读：",
     g_dc_conntoast: "官方 Discord 已连接 ✓", g_dc_connfail: "连接失败：", g_dc_tokinvalid: "token 无效",
     g_saving: "保存中…", g_saved_ok: "已保存（云端+本机）✓", g_saved_local: "已存本机，云端稍后重试", g_saved_localfail: "已存本机，云端失败（稍后重试）",
+    g_ppl: " 人 ", g_codes_unit: " 码", g_allgot: "全到账",
+    g_notify_sum: "🔔 兑换成功通知（Discord webhook）", g_notify_hint: "想新码自动兑换后立刻收到提醒？在你的 Discord 频道建一个 Webhook，把 URL 粘进来 —— 新码全队兑换成功就会自动播报。", g_notify_ph: "粘贴 Discord Webhook URL", g_notify_ok: "✓ 已连接，新码兑换会在频道播报", g_notify_fail: "连接失败", g_notify_on: "● 通知已开启", g_notify_cleared: "已关闭通知",
     g_foot: "礼包码由官方 Discord 直连 + 多个社区源自动收集；有效性以官方兑换接口实测为准。本工具为 1406 玩家自制、非官方、与 Century Games 无关。"
   },
   en: {
@@ -190,6 +192,8 @@ window.I18N = {
     g_dc_nochan_full: "(no readable channels — make sure the bot is in your server and can see that channel)", g_dc_connected1: "✓ Connected! reading every minute: ",
     g_dc_conntoast: "Official Discord connected ✓", g_dc_connfail: "Connection failed: ", g_dc_tokinvalid: "invalid token",
     g_saving: "Saving…", g_saved_ok: "Saved (cloud + local) ✓", g_saved_local: "Saved locally, cloud will retry", g_saved_localfail: "Saved locally, cloud failed (will retry)",
+    g_ppl: " ppl ", g_codes_unit: " codes", g_allgot: "fully done",
+    g_notify_sum: "🔔 Redeem notifications (Discord webhook)", g_notify_hint: "Want a ping the moment a new code is auto-redeemed? Create a Webhook in your Discord channel and paste its URL — successful squad-wide redeems get announced there.", g_notify_ph: "Paste Discord Webhook URL", g_notify_ok: "✓ Connected — new redeems will be announced", g_notify_fail: "Connection failed", g_notify_on: "● Notifications on", g_notify_cleared: "Notifications off",
     g_foot: "Codes are collected automatically from official Discord + several community sources; validity is per the official redeem API. Made by 1406 players, unofficial, not affiliated with Century Games."
   }
 };
